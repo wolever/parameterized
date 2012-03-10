@@ -16,6 +16,8 @@ def _terrible_magic_get_defining_classes():
         the implementation: http://stackoverflow.com/a/8793684/71522
         """
     stack = inspect.stack()
+    if len(stack) <= 4:
+        return []
     frame = stack[3]
     code_context = frame[4][0].strip()
     if not code_context.startswith("class "):
