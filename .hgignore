@@ -14,3 +14,4 @@ tags
 *.dump
 env/
 *egg-info*
+dist/
