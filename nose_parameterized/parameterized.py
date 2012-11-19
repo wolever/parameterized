@@ -82,7 +82,7 @@ def parameterized(input):
     return parameterized_helper
 
 def to_safe_name(s):
-    return re.sub("[^a-zA-Z0-9_]", "", s)
+    return str(re.sub("[^a-zA-Z0-9_]", "", s))
 
 def parameterized_expand_helper(func_name, func, args):
     def parameterized_expand_helper_helper(self=()):
