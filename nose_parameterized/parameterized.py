@@ -1,5 +1,4 @@
 import re
-import new
 import inspect
 import logging
 import logging.handlers
@@ -7,6 +6,15 @@ from functools import wraps
 
 from nose.tools import nottest
 from unittest import TestCase
+
+from . import six
+
+if six.PY3:
+    def new_instancemethod(f, *args):
+        return f
+else:
+    import new
+    new_instancemethod = new.instancemethod
 
 
 def _terrible_magic_get_defining_classes():
@@ -57,11 +65,11 @@ def parameterized(input):
                 # confusingly, we need to create a named instance method and
                 # attach that to the class...
                 cls = self.__class__
-                im_f = new.instancemethod(f, None, cls)
+                im_f = new_instancemethod(f, None, cls)
                 setattr(cls, f.__name__, im_f)
                 attached_instance_method[0] = True
             for args in input:
-                if isinstance(args, basestring):
+                if isinstance(args, six.string_types):
                     args = [args]
                 # ... then pull that named instance method off, turning it into
                 # a bound method ...
@@ -116,7 +124,7 @@ def parameterized_expand(input):
         base_name = f.__name__
         for num, args in enumerate(input):
             name_suffix = "_%s" %(num, )
-            if len(args) > 0 and isinstance(args[0], basestring):
+            if len(args) > 0 and isinstance(args[0], six.string_types):
                 name_suffix += "_" + to_safe_name(args[0])
             name = base_name + name_suffix
             new_func = parameterized_expand_helper(name, f, args)

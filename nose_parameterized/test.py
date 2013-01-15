@@ -30,7 +30,7 @@ def test_warns_on_bad_use_of_parameterized():
             @parameterized([42])
             def test_should_throw_error(self, param):
                 pass
-    except Exception, e:
+    except Exception as e:
         assert_contains(str(e), "parameterized.expand")
     else:
         raise AssertionError("Expected exception not raised")

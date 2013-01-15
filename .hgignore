@@ -15,3 +15,5 @@ tags
 env/
 *egg-info*
 dist/
+.tox
+.env32
