@@ -7,9 +7,7 @@ Nose. It's got test generators. But they kind of suck, because:
     * They make it difficult to separate the data from the test
     * They don't work with subclases of ``unittest.TestCase``
 
-But ``nose-parameterized`` fixes that.
-
-Check it out::
+But ``nose-parameterized`` fixes that::
 
     $ cat test_math.py
     from nose.tools import assert_equal
@@ -50,3 +48,4 @@ Check it out::
 
     OK
 
+**Now with Python 3 support!**
