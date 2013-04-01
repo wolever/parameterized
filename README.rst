@@ -1,4 +1,4 @@
-``nose-patameterized`` is a decorator for parameterized testing with ``nose``
+``nose-parameterized`` is a decorator for parameterized testing with ``nose``
 =============================================================================
 
 Nose. It's got test generators. But they kind of suck, because:
