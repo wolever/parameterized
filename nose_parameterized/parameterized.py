@@ -132,7 +132,20 @@ def parameterized_expand(input):
         return nottest(f)
     return parameterized_expand_wrapper
 
+def parameterized_from_csv(filename):
+    def from_csv_decorator(fn): 
+        @wraps(fn)
+        def wrapper(*args):
+            import csv 
+            with open(filename, 'rb') as csvfile:
+                for line in csv.reader(csvfile):
+                    fn(*tuple(line))
+
+        return wrapper
+    return from_csv_decorator
+
 parameterized.expand = parameterized_expand
+parameterized.from_csv = parameterized_from_csv
 
 def assert_contains(haystack, needle):
     if needle not in haystack:
