@@ -14,6 +14,18 @@ missing_tests = set([
     "test_parameterized_on_TestCase",
 ])
 
+csv_data = set([
+    "run1arg1",
+    "run1arg2",
+    "run2arg1",
+    "run2arg2"
+])
+
+@parameterized.from_csv("data.csv")
+def test_parameterized_naked_function_from_csv(foo, bar):
+    csv_data.remove(foo)
+    csv_data.remove(bar)
+
 @parameterized([(42, )])
 def test_parameterized_naked_function(foo):
     missing_tests.remove("test_parameterized_naked_function")
@@ -22,7 +34,6 @@ class TestParameterized(object):
     @parameterized([(42, )])
     def test_parameterized_instance_method(self, foo):
         missing_tests.remove("test_parameterized_instance_method")
-
 
 def test_warns_on_bad_use_of_parameterized():
     try:
