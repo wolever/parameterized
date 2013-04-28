@@ -133,6 +133,12 @@ def parameterized_expand(input):
     return parameterized_expand_wrapper
 
 def parameterized_from_csv(filename):
+    """ Parameterize a test case:
+        >>> @parameterized.from_csv("data.csv")
+        ... def test_add(input, expected):
+        ...     assert_equal(add1(input), expected)
+        >>>
+        """
     def from_csv_decorator(fn): 
         @wraps(fn)
         def wrapper(*args):
