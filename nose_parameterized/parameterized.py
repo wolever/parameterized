@@ -1,7 +1,5 @@
 import re
 import inspect
-import logging
-import logging.handlers
 from functools import wraps
 
 from nose.tools import nottest
@@ -16,23 +14,6 @@ else:
     import new
     new_instancemethod = new.instancemethod
 
-
-def _terrible_magic_get_defining_classes():
-    """ Returns the set of parent classes of the class currently being defined.
-        Will likely only work if called from the ``parameterized`` decorator.
-        This function is entirely @brandon_rhodes's fault, as he suggested
-        the implementation: http://stackoverflow.com/a/8793684/71522
-        """
-    stack = inspect.stack()
-    if len(stack) <= 4:
-        return []
-    frame = stack[3]
-    code_context = frame[4][0].strip()
-    if not code_context.startswith("class "):
-        return []
-    _, parents = code_context.split("(", 1)
-    parents, _ = parents.rsplit(")", 1)
-    return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
 
 def parameterized(input):
     """ Parameterize a test case:
@@ -146,7 +127,6 @@ def imported_from_test():
     """ Returns true if it looks like this module is being imported by unittest
         or nose. """
     import re
-    import inspect
     nose_re = re.compile(r"\bnose\b")
     unittest_re = re.compile(r"\bunittest2?\b")
     for frame in inspect.stack():
@@ -169,64 +149,19 @@ def assert_raises(func, exc_type, str_contains=None, repr_contains=None):
     else:
         raise AssertionError("%s not raised" %(exc_type, ))
 
-
-log_handler = None
-def setup_logging():
-    """ Configures a log handler which will capure log messages during a test.
-        The ``logged_messages`` and ``assert_no_errors_logged`` functions can be
-        used to make assertions about these logged messages.
-
-        For example::
-
-            from ensi_common.testing import (
-                setup_logging, teardown_logging, assert_no_errors_logged,
-                assert_logged,
-            )
-
-            class TestWidget(object):
-                def setup(self):
-                    setup_logging()
-
-                def teardown(self):
-                    assert_no_errors_logged()
-                    teardown_logging()
-
-                def test_that_will_fail(self):
-                    log.warning("this warning message will trigger a failure")
-
-                def test_that_will_pass(self):
-                    log.info("but info messages are ok")
-                    assert_logged("info messages are ok")
+def _terrible_magic_get_defining_classes():
+    """ Returns the set of parent classes of the class currently being defined.
+        Will likely only work if called from the ``parameterized`` decorator.
+        This function is entirely @brandon_rhodes's fault, as he suggested
+        the implementation: http://stackoverflow.com/a/8793684/71522
         """
-                    
-    global log_handler
-    if log_handler is not None:
-        logging.getLogger().removeHandler(log_handler)
-    log_handler = logging.handlers.BufferingHandler(1000)
-    formatter = logging.Formatter("%(name)s: %(levelname)s: %(message)s")
-    log_handler.setFormatter(formatter)
-    logging.getLogger().addHandler(log_handler)
-
-def teardown_logging():
-    global log_handler
-    if log_handler is not None:
-        logging.getLogger().removeHandler(log_handler)
-        log_handler = None
-
-def logged_messages():
-    assert log_handler, "setup_logging not called"
-    return [ (log_handler.format(record), record) for record in log_handler.buffer ]
-
-def assert_no_errors_logged():
-    for _, record in logged_messages():
-        if record.levelno >= logging.WARNING:
-            # Assume that the nose log capture plugin is being used, so it will
-            # show the exception.
-            raise AssertionError("an unexpected error was logged")
-
-def assert_logged(expected_msg_contents):
-    for msg, _ in logged_messages():
-        if expected_msg_contents in msg:
-            return
-    raise AssertionError("no logged message contains %r"
-                         %(expected_msg_contents, ))
+    stack = inspect.stack()
+    if len(stack) <= 4:
+        return []
+    frame = stack[3]
+    code_context = frame[4][0].strip()
+    if not code_context.startswith("class "):
+        return []
+    _, parents = code_context.split("(", 1)
+    parents, _ = parents.rsplit(")", 1)
+    return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
