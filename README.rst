@@ -120,7 +120,7 @@ functions::
 
 
 And ``@parameterized.expand`` can be used to generate test methods in
-sitautions where test generators cannot be used (for example, when the test
+situations where test generators cannot be used (for example, when the test
 class is a subclass of ``unittest.TestCase``)::
 
     import unittest
