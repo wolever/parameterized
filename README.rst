@@ -52,7 +52,7 @@ But ``nose-parameterized`` fixes that::
     OK
 
 
-Exhaustive Useage Examples
+Exhaustive Usage Examples
 --------------------------
 
 The ``@parameterized`` and ``@parameterized.expected`` decorators accept a list
