@@ -1,6 +1,7 @@
 import re
 import inspect
 from functools import wraps
+from collections import namedtuple
 
 from nose.tools import nottest
 from unittest import TestCase
@@ -14,154 +15,212 @@ else:
     import new
     new_instancemethod = new.instancemethod
 
+_param = namedtuple("param", "args kwargs")
 
-def parameterized(input):
-    """ Parameterize a test case:
-        >>> add1_tests = [(1, 2), (2, 3)]
-        >>> class TestFoo(object):
-        ...     @parameterized(add1_tests)
-        ...     def test_add1(self, input, expected):
-        ...         assert_equal(add1(input), expected)
-        >>> @parameterized(add1_tests)
-        ... def test_add1(input, expected):
-        ...     assert_equal(add1(input), expected)
-        >>>
+class param(_param):
+    """ Represents a single parameter to a test case.
+
+        For example::
+
+            >>> p = param("foo", bar=16)
+            >>> p
+            param("foo", bar=16)
+            >>> p.args
+            ('foo', )
+            >>> p.kwargs
+            {'bar': 16}
+
+        Intended to be used as an argument to ``@parameterized``::
+
+            @parameterized([
+                param("foo", bar=16),
+            ])
+            def test_stuff(foo, bar=16):
+                pass
         """
 
-    if not hasattr(input, "__iter__"):
-        raise ValueError("expected iterable input; got %r" %(input, ))
+    def __new__(cls, *args , **kwargs):
+        return _param.__new__(cls, args, kwargs)
 
-    def parameterized_helper(f):
-        attached_instance_method = [False]
+    @classmethod
+    def explicit(cls, args=None, kwargs=None):
+        """ Creates a ``param`` by explicitly specifying ``args`` and
+            ``kwargs``::
 
-        parent_classes = _terrible_magic_get_defining_classes()
+                >>> param.explicit([1,2,3])
+                param(*(1, 2, 3))
+                >>> param.explicit(kwargs={"foo": 42})
+                param(*(), **{"foo": "42"})
+            """
+        args = args or ()
+        kwargs = kwargs or {}
+        return cls(*args, **kwargs)
+
+    @classmethod
+    def from_decorator(cls, args):
+        """ Returns an instance of ``param()`` for ``@parameterized`` argument
+            ``args``::
+
+                >>> param.from_decorator((42, ))
+                param(args=(42, ), kwargs={})
+                >>> param.from_decorator("foo")
+                param(args=("foo", ), kwargs={})
+            """
+        if isinstance(args, param):
+            return args
+        if isinstance(args, six.string_types):
+            args = (args, )
+        return cls(*args)
+
+    def __repr__(self):
+        return "param(*%r, **%r)" %self
+
+class parameterized(object):
+    """ Parameterize a test case::
+
+            class TestInt(object):
+                @parameterized([
+                    ("A", 10),
+                    ("F", 15),
+                    param("10", 42, base=42)
+                ])
+                def test_int(self, input, expected, base=16):
+                    actual = int(input, base=base)
+                    assert_equal(actual, expected)
+
+            @parameterized([
+                (2, 3, 5)
+                (3, 5, 8),
+            ])
+            def test_add(a, b, expected):
+                assert_equal(a + b, expected)
+        """
+
+    def __init__(self, input):
+        self.get_input = self.input_as_callable(input)
+
+    def __call__(self, test_func):
+        self.assert_not_in_testcase_subclass()
+
+        @wraps(test_func)
+        def parameterized_helper_method(test_self=None):
+            f = test_func
+            if test_self is not None:
+                # If we are a test method (which we suppose to be true if we
+                # are being passed a "self" argument), we first need to create
+                # an instance method, attach it to the instance of the test
+                # class, then pull it back off to turn it into a bound method.
+                # If we don't do this, Nose gets cranky.
+                f = self.make_bound_method(test_self, test_func)
+            # Note: because nose is so very picky, the more obvious
+            # ``return self.yield_nose_tuples(f)`` won't work here.
+            for nose_tuple in self.yield_nose_tuples(f):
+                yield nose_tuple
+
+        test_func.__name__ = "_helper_for_%s" %(test_func.__name__, )
+        parameterized_helper_method.parameterized_input = input
+        parameterized_helper_method.parameterized_func = test_func
+        return parameterized_helper_method
+
+    def yield_nose_tuples(self, func):
+        for args in self.get_input():
+            p = param.from_decorator(args)
+            # ... then yield that as a tuple. If those steps aren't
+            # followed precicely, Nose gets upset and doesn't run the test
+            # or doesn't run setup methods.
+            yield self.param_as_nose_tuple(p, func)
+
+    def param_as_nose_tuple(self, p, func):
+        nose_func = func
+        nose_args = p.args
+        if p.kwargs:
+            nose_func = wraps(func)(lambda args, kwargs: func(*args, **kwargs))
+            nose_args = (p.args, p.kwargs)
+        return (nose_func, ) + nose_args
+
+    def make_bound_method(self, instance, func):
+        cls = type(instance)
+        im_f = new_instancemethod(func, None, cls)
+        setattr(cls, func.__name__, im_f)
+        return getattr(instance, func.__name__)
+
+    def assert_not_in_testcase_subclass(self):
+        parent_classes = self._terrible_magic_get_defining_classes()
         if any(issubclass(cls, TestCase) for cls in parent_classes):
             raise Exception("Warning: '@parameterized' tests won't work "
                             "inside subclasses of 'TestCase' - use "
                             "'@parameterized.expand' instead")
 
-        @wraps(f)
-        def parameterized_helper_method(self=None):
-            if self is not None and not attached_instance_method[0]:
-                # confusingly, we need to create a named instance method and
-                # attach that to the class...
-                cls = self.__class__
-                im_f = new_instancemethod(f, None, cls)
-                setattr(cls, f.__name__, im_f)
-                attached_instance_method[0] = True
-            for args in input:
-                if isinstance(args, six.string_types):
-                    args = [args]
-                # ... then pull that named instance method off, turning it into
-                # a bound method ...
-                if self is not None:
-                    args = [getattr(self, f.__name__)] + list(args)
-                else:
-                    args = [f] + list(args)
-                # ... then yield that as a tuple. If those steps aren't
-                # followed precicely, Nose gets upset and doesn't run the test
-                # or doesn't run setup methods.
-                yield tuple(args)
-
-        f.__name__ = "_helper_for_%s" %(f.__name__, )
-        parameterized_helper_method.parameterized_input = input
-        parameterized_helper_method.parameterized_func = f
-        return parameterized_helper_method
-
-    return parameterized_helper
-
-def to_safe_name(s):
-    return str(re.sub("[^a-zA-Z0-9_]", "", s))
-
-def parameterized_expand_helper(func_name, func, args):
-    def parameterized_expand_helper_helper(self=()):
-        if self != ():
-            self = (self, )
-        return func(*(self + args))
-    parameterized_expand_helper_helper.__name__ = func_name
-    return parameterized_expand_helper_helper
-
-def parameterized_expand(input):
-    """ A "brute force" method of parameterizing test cases. Creates new test
-        cases and injects them into the namespace that the wrapped function
-        is being defined in. Useful for parameterizing tests in subclasses
-        of 'UnitTest', where Nose test generators don't work.
-
-        >>> @parameterized.expand([("foo", 1, 2)])
-        ... def test_add1(name, input, expected):
-        ...     actual = add1(input)
-        ...     assert_equal(actual, expected)
-        ...
-        >>> locals()
-        ... 'test_add1_foo_0': <function ...> ...
-        >>>
-        """
-
-    def parameterized_expand_wrapper(f):
+    def _terrible_magic_get_defining_classes(self):
+        """ Returns the set of parent classes of the class currently being defined.
+            Will likely only work if called from the ``parameterized`` decorator.
+            This function is entirely @brandon_rhodes's fault, as he suggested
+            the implementation: http://stackoverflow.com/a/8793684/71522
+            """
         stack = inspect.stack()
-        frame = stack[1]
-        frame_locals = frame[0].f_locals
+        if len(stack) <= 4:
+            return []
+        frame = stack[4]
+        code_context = frame[4][0].strip()
+        if not code_context.startswith("class "):
+            return []
+        _, parents = code_context.split("(", 1)
+        parents, _ = parents.rsplit(")", 1)
+        return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
 
-        base_name = f.__name__
-        for num, args in enumerate(input):
-            name_suffix = "_%s" %(num, )
-            if len(args) > 0 and isinstance(args[0], six.string_types):
-                name_suffix += "_" + to_safe_name(args[0])
-            name = base_name + name_suffix
-            new_func = parameterized_expand_helper(name, f, args)
-            frame_locals[name] = new_func
-        return nottest(f)
-    return parameterized_expand_wrapper
+    @classmethod
+    def input_as_callable(cls, input):
+        if callable(input):
+            return lambda: cls.check_input_values(input())
+        input_values = cls.check_input_values(input)
+        return lambda: input_values
 
-parameterized.expand = parameterized_expand
+    @classmethod
+    def check_input_values(cls, input_values):
+        if not hasattr(input_values, "__iter__"):
+            raise ValueError("expected iterable input; got %r" %(input, ))
+        return input_values
 
-def assert_contains(haystack, needle):
-    if needle not in haystack:
-        raise AssertionError("%r not in %r" %(needle, haystack))
+    @classmethod
+    def expand(cls, input):
+        """ A "brute force" method of parameterizing test cases. Creates new
+            test cases and injects them into the namespace that the wrapped
+            function is being defined in. Useful for parameterizing tests in
+            subclasses of 'UnitTest', where Nose test generators don't work.
 
-def assert_not_contains(haystack, needle):
-    if needle in haystack:
-        raise AssertionError("%r in %r" %(needle, haystack))
+            >>> @parameterized.expand([("foo", 1, 2)])
+            ... def test_add1(name, input, expected):
+            ...     actual = add1(input)
+            ...     assert_equal(actual, expected)
+            ...
+            >>> locals()
+            ... 'test_add1_foo_0': <function ...> ...
+            >>>
+            """
 
-def imported_from_test():
-    """ Returns true if it looks like this module is being imported by unittest
-        or nose. """
-    import re
-    nose_re = re.compile(r"\bnose\b")
-    unittest_re = re.compile(r"\bunittest2?\b")
-    for frame in inspect.stack():
-        file = frame[1]
-        if nose_re.search(file) or unittest_re.search(file):
-            return True
-    return False
+        def parameterized_expand_wrapper(f):
+            stack = inspect.stack()
+            frame = stack[1]
+            frame_locals = frame[0].f_locals
 
-def assert_raises(func, exc_type, str_contains=None, repr_contains=None):
-    try:
-        func()
-    except exc_type as e:
-        if str_contains is not None and str_contains not in str(e):
-            raise AssertionError("%s raised, but %r does not contain %r"
-                                 %(exc_type, str(e), str_contains))
-        if repr_contains is not None and repr_contains not in repr(e):
-            raise AssertionError("%s raised, but %r does not contain %r"
-                                 %(exc_type, repr(e), repr_contains))
-        return e
-    else:
-        raise AssertionError("%s not raised" %(exc_type, ))
+            base_name = f.__name__
+            get_input = cls.input_as_callable(input)
+            for num, args in enumerate(get_input()):
+                p = param.from_decorator(args)
+                name_suffix = "_%s" %(num, )
+                if len(p.args) > 0 and isinstance(p.args[0], six.string_types):
+                    name_suffix += "_" + cls.to_safe_name(p.args[0])
+                name = base_name + name_suffix
+                frame_locals[name] = cls.param_as_standalone_func(p, f, name)
+            return nottest(f)
+        return parameterized_expand_wrapper
 
-def _terrible_magic_get_defining_classes():
-    """ Returns the set of parent classes of the class currently being defined.
-        Will likely only work if called from the ``parameterized`` decorator.
-        This function is entirely @brandon_rhodes's fault, as he suggested
-        the implementation: http://stackoverflow.com/a/8793684/71522
-        """
-    stack = inspect.stack()
-    if len(stack) <= 4:
-        return []
-    frame = stack[3]
-    code_context = frame[4][0].strip()
-    if not code_context.startswith("class "):
-        return []
-    _, parents = code_context.split("(", 1)
-    parents, _ = parents.rsplit(")", 1)
-    return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
+    @classmethod
+    def param_as_standalone_func(cls, p, func, name):
+        standalone_func = lambda *a: func(*(a + p.args), **p.kwargs)
+        standalone_func.__name__ = name
+        return standalone_func
+
+    @classmethod
+    def to_safe_name(cls, s):
+        return str(re.sub("[^a-zA-Z0-9_]", "", s))

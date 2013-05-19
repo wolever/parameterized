@@ -1,0 +1,13 @@
+0.3 (2013-05-18)
+
+    * Add `param` class.
+    * Add explicit support for callable inputs.
+    * Update readme to more throughly describe useage.
+    * Remove un-used test helpers (`setup_logging`, `teardown_logging`,
+     `logged_messages`, `assert_logged`, `assert_no_errors_logged`,
+     `assert_contains`, `assert_not_contains`, `assert_raises`,
+     `imported_from_test`).
+
+0.2 (2013-01-15)
+
+    * Add Python 3 support
