@@ -61,6 +61,7 @@ iterable::
 
     from nose_parameterized import parameterized, param
 
+    # A list of tuples
     @parameterized([
         (2, 3, 5),
         (3, 5, 8),
@@ -68,6 +69,7 @@ iterable::
     def test_add(a, b, expected):
         assert_equal(a + b, expected)
 
+    # A list of params
     @parameterized([
         param("10", 10),
         param("10", 16, base=16),
@@ -75,6 +77,7 @@ iterable::
     def test_int(str_val, expected, base=10):
         assert_equal(int(str_val, base=base), expected)
 
+    # An iterable of params
     @parameterized(
         param.explicit(*json.loads(line))
         for line in open("testcases.jsons")
@@ -82,13 +85,14 @@ iterable::
     def test_from_json_file(...):
         ...
 
+    # A callable which returns a list of tuples
     def load_test_cases():
         return [
-            param("foo"),
-            param("foo", bar=16),
+            ("test1", ),
+            ("test2", ),
         ]
     @parameterized(load_test_cases)
-    def test_from_function(foo, bar=None):
+    def test_from_function(name):
         ...
 
 
@@ -96,16 +100,10 @@ Note that, when using an iterator or a generator, Nose will read every item
 into memory before running any tests (as it first finds and loads every test in
 each test file, then executes all of them at once).
 
-The ``@parameterized`` decorator can be used with standalone functions and
-methods of a test class::
+The ``@parameterized`` decorator can be used test class methods, and standalone
+functions::
 
     from nose_parameterized import parameterized
-
-    @parameterized([
-        (2, 3, 5),
-    ])
-    def test_add(a, b, expected):
-        assert_equal(a + b, expected)
 
     class AddTest(object):
         @parameterized([
@@ -114,9 +112,18 @@ methods of a test class::
         def test_add(self, a, b, expected):
             assert_equal(a + b, expected)
 
-And ``@parameterized.expected`` can be used when the test class is a subclass
-of ``TestCase``::
+    @parameterized([
+        (2, 3, 5),
+    ])
+    def test_add(a, b, expected):
+        assert_equal(a + b, expected)
 
+
+And ``@parameterized.expand`` can be used to generate test methods in
+sitautions where test generators cannot be used (for example, when the test
+class is a subclass of ``unittest.TestCase``)::
+
+    import unittest
     from nose_parameterized import parameterized
 
     class AddTestCase(unittest.TestCase):
@@ -127,10 +134,11 @@ of ``TestCase``::
         def test_add(self, _, a, b, expected):
             assert_equal(a + b, expected)
 
-Note that ``@parameterized.expand`` works by adding new methods to the test
-class. If the first argument of each parameter is a string, that string will be
-added to the end of the method name. For example, the test case above will
-generate the methods ``test_add_0_2_and_3`` and ``test_add_1_3_and_5``.
+
+Note that ``@parameterized.expand`` works by creating new methods on the test
+class. If the first parameter is a string, that string will be added to the end
+of the method name. For example, the test case above will generate the methods
+``test_add_0_2_and_3`` and ``test_add_1_3_and_5``.
 
 The ``param(...)`` helper represents the parameters for one specific test case.
 It can be used to pass keyword arguments to test cases::
