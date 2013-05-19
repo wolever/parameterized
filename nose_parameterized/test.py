@@ -50,7 +50,7 @@ def test_warns_when_using_parameterized_with_TestCase():
     try:
         class TestTestCaseWarnsOnBadUseOfParameterized(TestCase):
             @parameterized([42])
-            def test_should_throw_error(self, foo):
+            def test_in_subclass_of_TestCase(self, foo):
                 pass
     except Exception as e:
         assert_contains(str(e), "parameterized.expand")

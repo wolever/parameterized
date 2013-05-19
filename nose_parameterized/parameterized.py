@@ -161,8 +161,8 @@ class parameterized(object):
         if len(stack) <= 4:
             return []
         frame = stack[4]
-        code_context = frame[4][0].strip()
-        if not code_context.startswith("class "):
+        code_context = frame[4] and frame[4][0].strip()
+        if not (code_context and code_context.startswith("class ")):
             return []
         _, parents = code_context.split("(", 1)
         parents, _ = parents.rsplit(")", 1)
