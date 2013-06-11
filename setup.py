@@ -16,7 +16,8 @@ setup(
     description="Decorator for parameterized testing with Nose",
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: BSD License',
     ],
     packages=find_packages(),
 )
