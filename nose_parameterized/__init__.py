@@ -1,1 +1,1 @@
-from .parameterized import parameterized
+from .parameterized import parameterized, param

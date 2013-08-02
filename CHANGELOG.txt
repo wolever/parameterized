@@ -1,3 +1,7 @@
+0.3.1 (2013-08-01)
+
+    * Fix bug: `nose_parameterized.param` wasn't being imported.
+
 0.3 (2013-05-18)
 
     * Add `param` class.
