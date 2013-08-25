@@ -34,7 +34,7 @@ But ``nose-parameterized`` fixes that::
             ("integer", 1, 1.0),
             ("large fraction", 1.6, 1),
         ])
-        def test_floor(self, input, expected):
+        def test_floor(self, name, input, expected):
             assert_equal(math.floor(input), expected)
 
     $ nosetests -v test_math.py
