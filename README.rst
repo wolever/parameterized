@@ -55,7 +55,7 @@ But ``nose-parameterized`` fixes that::
 Exhaustive Usage Examples
 --------------------------
 
-The ``@parameterized`` and ``@parameterized.expected`` decorators accept a list
+The ``@parameterized`` and ``@parameterized.expand`` decorators accept a list
 or iterable of tuples or ``param(...)``, or a callable which returns a list or
 iterable::
 
