@@ -1,3 +1,6 @@
+0.3.2 (2014-01-02)
+    * Add helpful error message when used with old-style classes.
+
 0.3.1 (2013-08-01)
 
     * Fix bug: `nose_parameterized.param` wasn't being imported.

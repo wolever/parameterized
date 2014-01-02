@@ -1,6 +1,8 @@
 from unittest import TestCase
 from nose.tools import assert_equal
+from nose.plugins.skip import SkipTest
 
+from . import six
 from .parameterized import parameterized, param
 
 def assert_contains(haystack, needle):
@@ -20,6 +22,8 @@ missing_tests = set([
     "test_on_TestCase('foo0', bar=None)",
     "test_on_TestCase('foo1', bar=None)",
     "test_on_TestCase('foo2', bar=42)",
+    "test_on_old_style_class('foo')",
+    "test_on_old_style_class('bar')",
 ])
 
 test_params = [
@@ -75,3 +79,26 @@ def test_helpful_error_on_non_iterable_input():
 def teardown_module():
     missing = sorted(list(missing_tests))
     assert_equal(missing, [])
+
+
+def test_old_style_classes():
+    if six.PY3:
+        raise SkipTest("Py3 doesn't have old-style classes")
+    class OldStyleClass:
+        @parameterized(["foo"])
+        def parameterized_method(self, param):
+            pass
+    try:
+        list(OldStyleClass().parameterized_method())
+    except TypeError as e:
+        assert_contains(str(e), "new-style")
+        assert_contains(str(e), "parameterized.expand")
+        assert_contains(str(e), "OldStyleClass")
+    else:
+        raise AssertionError("expected TypeError not raised by old-style class")
+
+
+class TestOldStyleClass:
+    @parameterized.expand(["foo", "bar"])
+    def test_old_style_classes(self, param):
+        missing_tests.remove("test_on_old_style_class(%r)" %(param, ))

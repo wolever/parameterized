@@ -11,9 +11,14 @@ from . import six
 if six.PY3:
     def new_instancemethod(f, *args):
         return f
+
+    # Python 3 doesn't have an InstanceType, so just use a dummy type.
+    class InstanceType():
+        pass
 else:
     import new
     new_instancemethod = new.instancemethod
+    from types import InstanceType
 
 _param = namedtuple("param", "args kwargs")
 
@@ -140,6 +145,14 @@ class parameterized(object):
 
     def make_bound_method(self, instance, func):
         cls = type(instance)
+        if issubclass(cls, InstanceType):
+            raise TypeError((
+                "@parameterized can't be used with old-style classes, but "
+                "%r has an old-style class. Consider using a new-style "
+                "class, or '@parameterized.expand' "
+                "(see http://stackoverflow.com/q/54867/71522 for more "
+                "information on old-style classes)."
+            ) %(instance, ))
         im_f = new_instancemethod(func, None, cls)
         setattr(cls, func.__name__, im_f)
         return getattr(instance, func.__name__)
@@ -164,8 +177,8 @@ class parameterized(object):
         code_context = frame[4] and frame[4][0].strip()
         if not (code_context and code_context.startswith("class ")):
             return []
-        _, parents = code_context.split("(", 1)
-        parents, _ = parents.rsplit(")", 1)
+        _, _, parents = code_context.partition("(")
+        parents, _, _ = parents.partition(")")
         return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
 
     @classmethod
