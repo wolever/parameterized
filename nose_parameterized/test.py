@@ -2,7 +2,7 @@ from unittest import TestCase
 from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
 
-from . import six
+from .compat import PY3
 from .parameterized import parameterized, param
 
 def assert_contains(haystack, needle):
@@ -82,7 +82,7 @@ def teardown_module():
 
 
 def test_old_style_classes():
-    if six.PY3:
+    if PY3:
         raise SkipTest("Py3 doesn't have old-style classes")
     class OldStyleClass:
         @parameterized(["foo"])
