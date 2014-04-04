@@ -10,9 +10,11 @@ Nose. It's got test generators. But they kind of suck:
     * They don't work with subclases of ``unittest.TestCase``
     * ``kwargs``? What ``kwargs``?
 
-But ``nose-parameterized`` fixes that::
+But ``nose-parameterized`` fixes that:
 
-    $ cat test_math.py
+.. code:: python
+
+    # test_math.py
     from nose.tools import assert_equal
     from nose_parameterized import parameterized
 
@@ -37,6 +39,7 @@ But ``nose-parameterized`` fixes that::
         def test_floor(self, name, input, expected):
             assert_equal(math.floor(input), expected)
 
+::
     $ nosetests -v test_math.py
     test_math.test_pow(2, 2, 4) ... ok
     test_math.test_pow(2, 3, 8) ... ok
@@ -57,7 +60,9 @@ Exhaustive Usage Examples
 
 The ``@parameterized`` and ``@parameterized.expand`` decorators accept a list
 or iterable of tuples or ``param(...)``, or a callable which returns a list or
-iterable::
+iterable:
+
+.. code:: python
 
     from nose_parameterized import parameterized, param
 
@@ -95,13 +100,16 @@ iterable::
     def test_from_function(name):
         ...
 
+.. **
 
 Note that, when using an iterator or a generator, Nose will read every item
 into memory before running any tests (as it first finds and loads every test in
 each test file, then executes all of them at once).
 
 The ``@parameterized`` decorator can be used test class methods, and standalone
-functions::
+functions:
+
+.. code:: python
 
     from nose_parameterized import parameterized
 
@@ -121,7 +129,9 @@ functions::
 
 And ``@parameterized.expand`` can be used to generate test methods in
 situations where test generators cannot be used (for example, when the test
-class is a subclass of ``unittest.TestCase``)::
+class is a subclass of ``unittest.TestCase``):
+
+.. code:: python
 
     import unittest
     from nose_parameterized import parameterized
@@ -141,7 +151,9 @@ of the method name. For example, the test case above will generate the methods
 ``test_add_0_2_and_3`` and ``test_add_1_3_and_5``.
 
 The ``param(...)`` helper represents the parameters for one specific test case.
-It can be used to pass keyword arguments to test cases::
+It can be used to pass keyword arguments to test cases:
+
+.. code:: python
 
     from nose_parameterized import parameterized, param
 
