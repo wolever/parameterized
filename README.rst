@@ -40,6 +40,7 @@ But ``nose-parameterized`` fixes that:
             assert_equal(math.floor(input), expected)
 
 ::
+
     $ nosetests -v test_math.py
     test_math.test_pow(2, 2, 4) ... ok
     test_math.test_pow(2, 3, 8) ... ok
