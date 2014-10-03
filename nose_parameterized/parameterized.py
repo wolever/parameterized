@@ -230,7 +230,11 @@ class parameterized(object):
 
     @classmethod
     def param_as_standalone_func(cls, p, func, name):
-        standalone_func = lambda *a: func(*(a + p.args), **p.kwargs)
+
+        @wraps(func)
+        def standalone_func(*a):
+            return func(*(a + p.args), **p.kwargs)
+
         standalone_func.__name__ = name
         return standalone_func
 
