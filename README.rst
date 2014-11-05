@@ -151,6 +151,37 @@ class. If the first parameter is a string, that string will be added to the end
 of the method name. For example, the test case above will generate the methods
 ``test_add_0_2_and_3`` and ``test_add_1_3_and_5``.
 
+If you need to override the way ``@parameterized.expand`` names your new
+test case methods then supply a custom naming function and pass it in for the
+optional keyword arg ``name_func``.
+Your naming function must take in 3 parameters which wil get passed: the original
+test case name, the parameters, and the iteration number.  Your naming function
+can use (or ignore) any of these parameters and return any test method name you like.
+
+.. code:: python
+
+    import unittest
+    from nose_parameterized import parameterized, compat
+
+    def custom_naming_func(testcase_name, parameters, generator_num):
+        if len(parameters.args) > 0 and isinstance(parameters.args[0], compat.string_types):
+            return testcase_name + '_myseparator_' + \
+                re.sub("[^a-zA-Z0-9_]+", "_", parameters.args[0])
+        else:
+            raise Exception("Error: 'custom_naming_func()' requires string "
+                            "parameter for extending test name.")
+
+    class AddTestCase(unittest.TestCase):
+        @parameterized.expand([
+            ("abc", 2, 3, 5),
+            ("xyz", 2, 3, 5),
+        ], name_func=custom_naming_func)
+        def test_add(self, _, a, b, expected):
+            assert_equal(a + b, expected)
+
+The test case above will generate the methods
+``test_add_myseparator_abc`` and ``test_add_myseparator_xyz``.
+
 The ``param(...)`` helper represents the parameters for one specific test case.
 It can be used to pass keyword arguments to test cases:
 
