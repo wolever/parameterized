@@ -49,8 +49,8 @@ class TestParameterized(object):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
 
 
-def custom_naming_func(testcase_func, param_num, params):
-    return testcase_func.__name__ + '_custom_name_' + str(params.args[0])
+def custom_naming_func(testcase_func, param_num, param):
+    return testcase_func.__name__ + '_custom_name_' + str(param.args[0])
 
 class TestParamerizedOnTestCase(TestCase):
     @parameterized.expand(test_params)
