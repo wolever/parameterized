@@ -1,3 +1,4 @@
+import inspect
 from unittest import TestCase
 from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
@@ -22,6 +23,10 @@ missing_tests = set([
     "test_on_TestCase('foo0', bar=None)",
     "test_on_TestCase('foo1', bar=None)",
     "test_on_TestCase('foo2', bar=42)",
+    "test_on_TestCase2_custom_name_42(42, bar=None)",
+    "test_on_TestCase2_custom_name_foo0('foo0', bar=None)",
+    "test_on_TestCase2_custom_name_foo1('foo1', bar=None)",
+    "test_on_TestCase2_custom_name_foo2('foo2', bar=42)",
     "test_on_old_style_class('foo')",
     "test_on_old_style_class('bar')",
 ])
@@ -44,11 +49,25 @@ class TestParameterized(object):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
 
 
+def custom_naming_func(testcase_func, param_num, params):
+    return testcase_func.__name__ + '_custom_name_' + str(params.args[0])
+
 class TestParamerizedOnTestCase(TestCase):
     @parameterized.expand(test_params)
     def test_on_TestCase(self, foo, bar=None):
         missing_tests.remove("test_on_TestCase(%r, bar=%r)" %(foo, bar))
 
+    @parameterized.expand(test_params, testcase_func_name=custom_naming_func)
+    def test_on_TestCase2(self, foo, bar=None):
+        stack = inspect.stack()
+        frame = stack[1]
+        frame_locals = frame[0].f_locals
+        nose_test_method_name = frame_locals['a'][0]._testMethodName
+        expected_name = "test_on_TestCase2_custom_name_" + str(foo)
+        assert_equal(nose_test_method_name, expected_name,
+                     "Test Method name '%s' did not get customized to expected: '%s'" %
+                     (nose_test_method_name, expected_name))
+        missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
 
 def test_warns_when_using_parameterized_with_TestCase():
     try:

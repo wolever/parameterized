@@ -195,7 +195,7 @@ class parameterized(object):
         return input_values
 
     @classmethod
-    def expand(cls, input, name_func=None):
+    def expand(cls, input, testcase_func_name=None):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
@@ -220,9 +220,9 @@ class parameterized(object):
             get_input = cls.input_as_callable(input)
             for num, args in enumerate(get_input()):
                 p = param.from_decorator(args)
-                if name_func:
+                if testcase_func_name:
                     # Caller wants to over-ride default test case func/method naming scheme.
-                    name = name_func(base_name, p, num)
+                    name = testcase_func_name(f, num, p)
                 else:
                     name_suffix = "_%s" %(num, )
                     if len(p.args) > 0 and isinstance(p.args[0], compat.string_types):
