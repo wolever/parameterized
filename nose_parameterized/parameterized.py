@@ -195,7 +195,7 @@ class parameterized(object):
         return input_values
 
     @classmethod
-    def expand(cls, input, testcase_func_name=None):
+    def expand(cls, input, testcase_func_name=None, testcase_func_doc=None):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
@@ -211,10 +211,52 @@ class parameterized(object):
             >>>
             """
 
-        def parameterized_expand_wrapper(f):
+        def doc_expansion(f, args, kwargs, is_method):
+            offset = 1 if is_method else 0
+            vns = inspect.getargspec(f)[0][offset:]
+            descs = ["{0} = {1}".format(n, repr(v)) for n, v in zip(vns, args)]
+            descs.extend(["{0} = {1}".format(k, repr(v)) for k, v in kwargs.items()])
+
+            # Make up for the shortfall by setting the rest to None
+            descs.extend(["{0} = {1}".format(n, "None") for n in vns[len(args) + len(kwargs.keys()):]])
+
+            if f.__doc__ is not None:
+                # The documentation might be a multiline string, so split it
+                # and just work with the first string, ignoring the period
+                # at the end if there is one.
+                split_doc = f.__doc__.split("\n")
+                first = split_doc[0]
+                append = ""
+                if first[-1] == ".":
+                    append = "."
+                    first = first[:-1]
+
+                first = first + " [with {0}]".format(", ".join(descs)) + append
+                return "\n".join([first] + split_doc[1:])
+            else:
+                return None
+
+        def parameterized_expand_wrapper(f, instance=None):
             stack = inspect.stack()
             frame = stack[1]
             frame_locals = frame[0].f_locals
+
+            # Determining whether or not a function is actually an instance
+            # method at the time it is being decorated (as opposed to the time
+            # where it is called, where it has already been added as an
+            # instance method to a class) is tricky.
+            #
+            # It isn't possible to use the typical indicators of __self__
+            # or im_self because the function hasn't been bound as a method
+            # yet.
+            #
+            # It appears that the only indicator is that when we're inside a
+            # class-definition stack frame, __module__ will be defined on
+            # that frame.
+            #
+            # We can assume that we are not using parameterized.expand
+            # on a static method.
+            is_method = frame_locals.get('__module__') is not None
 
             base_name = f.__name__
             get_input = cls.input_as_callable(input)
@@ -228,7 +270,15 @@ class parameterized(object):
                     if len(p.args) > 0 and isinstance(p.args[0], compat.string_types):
                         name_suffix += "_" + cls.to_safe_name(p.args[0])
                     name = base_name + name_suffix
+
+                if testcase_func_doc:
+                    # Caller wants to override __doc__ generation scheme.
+                    doc = testcase_func_doc(f, num, p)
+                else:
+                    doc = doc_expansion(f, p.args, p.kwargs, is_method)
+
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
+                frame_locals[name].__doc__ = doc
             return nottest(f)
         return parameterized_expand_wrapper
 
