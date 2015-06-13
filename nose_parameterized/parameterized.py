@@ -80,6 +80,59 @@ class param(_param):
     def __repr__(self):
         return "param(*%r, **%r)" %self
 
+def parameterized_argument_value_pairs(parameters, function_spec):
+    """Return tuples of parameterized arguments and their values.
+
+    This is useful if you are writing your own testcase_func_doc
+    function and need to know the values for each parameter name.
+    """
+    function_argspec = inspect.getargspec(function_spec)
+
+    args = parameters.args
+    num_defaults = len(function_argspec.defaults or list())
+    num_args = len(function_argspec.args or list())
+    kwargs = dict(zip(function_argspec.args[num_args - num_defaults:],
+                      function_argspec.defaults or list()))
+    kwargs.update(parameters.kwargs)
+
+    return (zip(function_argspec.args[1:num_args], args) +
+            [(k, v) for k, v in kwargs.items()])
+
+
+def default_testcase_func_doc(f, num, p):
+
+    all_args_with_values = parameterized_argument_value_pairs(p, f)
+
+    def short_repr(x, ln=64):
+        x_repr = repr(x)
+        if isinstance(x_repr, str):
+            try:
+                x_repr = unicode(x_repr, "utf-8")
+            except UnicodeDecodeError:
+                x_repr = unicode(x_repr, "latin1")
+        if len(x_repr) > n:
+            x_repr = x_repr[:n/2] + "..." + x_repr[len(x_repr) - n/2:]
+        return x_repr
+
+    # Assumes that the function passed is a bound method.
+    descs = [u"{0} = {1}".format(n, short_repr(v)) for n, v in all_args_with_values]
+
+    if f.__doc__ is not None:
+        # The documentation might be a multiline string, so split it
+        # and just work with the first string, ignoring the period
+        # at the end if there is one.
+        split_doc = f.__doc__.split("\n")
+        first = split_doc[0]
+        append = u""
+        if first[-1] == ".":
+            append = u"."
+            first = first[:-1]
+
+        first = first + u" [with {0}]".format(", ".join(descs)) + append
+        return u"\n".join([first] + split_doc[1:])
+    else:
+        return None
+
 class parameterized(object):
     """ Parameterize a test case::
 
@@ -211,52 +264,17 @@ class parameterized(object):
             >>>
             """
 
-        def doc_expansion(f, args, kwargs, is_method):
-            offset = 1 if is_method else 0
-            vns = inspect.getargspec(f)[0][offset:]
-            descs = ["{0} = {1}".format(n, repr(v)) for n, v in zip(vns, args)]
-            descs.extend(["{0} = {1}".format(k, repr(v)) for k, v in kwargs.items()])
-
-            # Make up for the shortfall by setting the rest to None
-            descs.extend(["{0} = {1}".format(n, "None") for n in vns[len(args) + len(kwargs.keys()):]])
-
-            if f.__doc__ is not None:
-                # The documentation might be a multiline string, so split it
-                # and just work with the first string, ignoring the period
-                # at the end if there is one.
-                split_doc = f.__doc__.split("\n")
-                first = split_doc[0]
-                append = ""
-                if first[-1] == ".":
-                    append = "."
-                    first = first[:-1]
-
-                first = first + " [with {0}]".format(", ".join(descs)) + append
-                return "\n".join([first] + split_doc[1:])
-            else:
-                return None
-
         def parameterized_expand_wrapper(f, instance=None):
+            # Throw a runtime error if the very first argument is
+            # not self. Either the code is not PEP8 compliant, or
+            # this is not a method, and parameterized.expand
+            # can only be used on methods.
+            if inspect.getargspec(f).args[0] != "self":
+                raise RuntimeError("First argument must be 'self'.")
+
             stack = inspect.stack()
             frame = stack[1]
             frame_locals = frame[0].f_locals
-
-            # Determining whether or not a function is actually an instance
-            # method at the time it is being decorated (as opposed to the time
-            # where it is called, where it has already been added as an
-            # instance method to a class) is tricky.
-            #
-            # It isn't possible to use the typical indicators of __self__
-            # or im_self because the function hasn't been bound as a method
-            # yet.
-            #
-            # It appears that the only indicator is that when we're inside a
-            # class-definition stack frame, __module__ will be defined on
-            # that frame.
-            #
-            # We can assume that we are not using parameterized.expand
-            # on a static method.
-            is_method = frame_locals.get('__module__') is not None
 
             base_name = f.__name__
             get_input = cls.input_as_callable(input)
@@ -271,11 +289,8 @@ class parameterized(object):
                         name_suffix += "_" + cls.to_safe_name(p.args[0])
                     name = base_name + name_suffix
 
-                if testcase_func_doc:
-                    # Caller wants to override __doc__ generation scheme.
-                    doc = testcase_func_doc(f, num, p)
-                else:
-                    doc = doc_expansion(f, p.args, p.kwargs, is_method)
+                testcase_func_doc_func = (testcase_func_doc or default_testcase_func_doc)
+                doc = testcase_func_doc_func(f, num, p)
 
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
                 frame_locals[name].__doc__ = doc

@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import inspect
 from unittest import TestCase
 from nose.tools import assert_equal
@@ -35,6 +37,15 @@ missing_tests = set([
     "test_on_TestCase4_custom_name_foo0('foo0', bar=None)",
     "test_on_TestCase4_custom_name_foo1('foo1', bar=None)",
     "test_on_TestCase4_custom_name_foo2('foo2', bar=42)",
+    "test_on_TestCase4_custom_name_42(42, bar=None)",
+    "test_on_TestCase5_unicode_name_foo0('foo0', bar=None)",
+    "test_on_TestCase5_unicode_name_foo1('foo1', bar=None)",
+    "test_on_TestCase5_unicode_name_foo2('foo2', bar=42)",
+    "test_on_TestCase5_unicode_name_42(42, bar=None)",
+    "test_on_TestCase6_custom_name_42(42, bar=12)",
+    "test_on_TestCase6_custom_name_foo0('foo0', bar=12)",
+    "test_on_TestCase6_custom_name_foo1('foo1', bar=12)",
+    "test_on_TestCase6_custom_name_foo2('foo2', bar=42)",
     "test_on_old_style_class('foo')",
     "test_on_old_style_class('bar')",
 ])
@@ -57,8 +68,11 @@ class TestParameterized(object):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
 
 
-def custom_naming_func(testcase_func, param_num, param):
-    return testcase_func.__name__ + '_custom_name_' + str(param.args[0])
+def custom_naming_func(custom_tag):
+    def custom_naming_func(testcase_func, param_num, param):
+        return testcase_func.__name__ + ('_%s_name_' % custom_tag) + str(param.args[0])
+
+    return custom_naming_func
 
 def custom_doc_func(testcase_func, param_num, param):
     return testcase_func.__doc__ + ' ' + str(param.args[0])
@@ -69,7 +83,8 @@ class TestParamerizedOnTestCase(TestCase):
     def test_on_TestCase(self, foo, bar=None):
         missing_tests.remove("test_on_TestCase(%r, bar=%r)" %(foo, bar))
 
-    @parameterized.expand(test_params, testcase_func_name=custom_naming_func)
+    @parameterized.expand(test_params,
+                          testcase_func_name=custom_naming_func("custom"))
     def test_on_TestCase2(self, foo, bar=None):
         stack = inspect.stack()
         frame = stack[1]
@@ -82,7 +97,7 @@ class TestParamerizedOnTestCase(TestCase):
         missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
 
     @parameterized.expand(test_params,
-                          testcase_func_name=custom_naming_func,
+                          testcase_func_name=custom_naming_func("custom"),
                           testcase_func_doc=custom_doc_func)
     def test_on_TestCase3(self, foo, bar=None):
         """TestCase3 Documentation"""
@@ -98,7 +113,7 @@ class TestParamerizedOnTestCase(TestCase):
         missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
 
     @parameterized.expand(test_params,
-                          testcase_func_name=custom_naming_func)
+                          testcase_func_name=custom_naming_func("custom"))
     def test_on_TestCase4(self, foo, bar=None):
         """TestCase4 Documentation.
 
@@ -110,6 +125,37 @@ class TestParamerizedOnTestCase(TestCase):
         expected_doc = ("TestCase4 Documentation [with foo = %r, bar = %r].\n\n"
                         "        More" % (foo, bar))
         expected_name = "test_on_TestCase4_custom_name_" + str(foo)
+        assert_equal(nose_test_method_doc, expected_doc,
+                     "Test Method doc '%s' did not get customized to expected: '%s'" %
+                     (nose_test_method_doc, expected_doc))
+        missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
+
+    @parameterized.expand(test_params,
+                          testcase_func_name=custom_naming_func("unicode"))
+    def test_on_TestCase5(self, foo, bar=None):
+        u"""TestCase5 Döcumentation."""
+        stack = inspect.stack()
+        frame = stack[1]
+        frame_locals = frame[0].f_locals
+        nose_test_method_doc = frame_locals['a'][0]._testMethodDoc
+        expected_doc = (u"TestCase5 Döcumentation [with foo = %r, bar = %r]." % (foo, bar))
+        expected_name = "test_on_TestCase5_unicode_name_" + str(foo)
+        assert_equal(nose_test_method_doc, expected_doc,
+                     "Test Method doc '%s' did not get customized to expected: '%s'" %
+                     (nose_test_method_doc, expected_doc))
+        missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
+
+    @parameterized.expand(test_params,
+                          testcase_func_name=custom_naming_func("custom"),
+                          testcase_func_doc=custom_doc_func)
+    def test_on_TestCase6(self, foo, bar=12):
+        """TestCase6 Documentation"""
+        stack = inspect.stack()
+        frame = stack[1]
+        frame_locals = frame[0].f_locals
+        nose_test_method_doc = frame_locals['a'][0]._testMethodDoc
+        expected_doc = "TestCase6 Documentation " + str(foo)
+        expected_name = "test_on_TestCase6_custom_name_" + str(foo)
         assert_equal(nose_test_method_doc, expected_doc,
                      "Test Method doc '%s' did not get customized to expected: '%s'" %
                      (nose_test_method_doc, expected_doc))
