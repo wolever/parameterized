@@ -144,41 +144,46 @@ def parameterized_argument_value_pairs(func, p):
 
     return result
 
+def short_repr(x, n=64):
+    """ A shortened repr of ``x`` which is guaranteed to be ``unicode``::
 
+            >>> short_repr("foo")
+            u"foo"
+            >>> short_repr("123456789", n=4)
+            u"12...89"
+    """
 
-def default_testcase_func_doc(f, num, p):
+    x_repr = repr(x)
+    if isinstance(x_repr, str):
+        try:
+            x_repr = unicode(x_repr, "utf-8")
+        except UnicodeDecodeError:
+            x_repr = unicode(x_repr, "latin1")
+    if len(x_repr) > n:
+        x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
+    return x_repr
 
-    all_args_with_values = parameterized_argument_value_pairs(f, p)
+def default_testcase_func_doc(func, num, p):
+    if func.__doc__ is None:
+        return None
 
-    def short_repr(x, ln=64):
-        x_repr = repr(x)
-        if isinstance(x_repr, str):
-            try:
-                x_repr = unicode(x_repr, "utf-8")
-            except UnicodeDecodeError:
-                x_repr = unicode(x_repr, "latin1")
-        if len(x_repr) > n:
-            x_repr = x_repr[:n/2] + "..." + x_repr[len(x_repr) - n/2:]
-        return x_repr
+    all_args_with_values = parameterized_argument_value_pairs(func, p)
 
     # Assumes that the function passed is a bound method.
-    descs = [u"{0} = {1}".format(n, short_repr(v)) for n, v in all_args_with_values]
+    descs = [u"{0}={1}".format(n, short_repr(v)) for n, v in all_args_with_values]
 
-    if f.__doc__ is not None:
-        # The documentation might be a multiline string, so split it
-        # and just work with the first string, ignoring the period
-        # at the end if there is one.
-        split_doc = f.__doc__.split("\n")
-        first = split_doc[0]
-        append = u""
-        if first[-1] == ".":
-            append = u"."
-            first = first[:-1]
+    # The documentation might be a multiline string, so split it
+    # and just work with the first string, ignoring the period
+    # at the end if there is one.
+    split_doc = func.__doc__.split("\n")
+    first = split_doc[0]
+    append = u""
+    if first[-1] == ".":
+        append = u"."
+        first = first[:-1]
 
-        first = first + u" [with {0}]".format(", ".join(descs)) + append
-        return u"\n".join([first] + split_doc[1:])
-    else:
-        return None
+    first = first + u" [with {0}]".format(", ".join(descs)) + append
+    return u"\n".join([first] + split_doc[1:])
 
 class parameterized(object):
     """ Parameterize a test case::
