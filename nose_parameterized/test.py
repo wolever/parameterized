@@ -6,7 +6,7 @@ from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
 
 from .compat import PY3
-from .parameterized import parameterized, param
+from .parameterized import parameterized, param, parameterized_argument_value_pairs
 
 def assert_contains(haystack, needle):
     if needle not in haystack:
@@ -213,3 +213,24 @@ class TestOldStyleClass:
     @parameterized.expand(["foo", "bar"])
     def test_old_style_classes(self, param):
         missing_tests.remove("test_on_old_style_class(%r)" %(param, ))
+
+
+@parameterized([
+    ("foo", param(1), [("foo", 1)]),
+    ("foo, *a", param(1), [("foo", 1)]),
+    ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9, ))]),
+    ("foo, *a, **kw", param(1, bar=9), [("foo", 1), ("**kw", {"bar": 9})]),
+    ("x=9", param(), [("x", 9)]),
+    ("x=9", param(1), [("x", 1)]),
+    ("x, y=9, *a, **kw", param(1), [("x", 1), ("y", 9)]),
+    ("x, y=9, *a, **kw", param(1, 2), [("x", 1), ("y", 2)]),
+    ("x, y=9, *a, **kw", param(1, 2, 3), [("x", 1), ("y", 2), ("*a", (3, ))]),
+    ("x, y=9, *a, **kw", param(1, y=2), [("x", 1), ("y", 2)]),
+    ("x, y=9, *a, **kw", param(1, z=2), [("x", 1), ("y", 9), ("**kw", {"z": 2})]),
+    ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3, )), ("**kw", {"z": 3})]),
+])
+def test_parameterized_argument_value_pairs(func_params, p, expected):
+    ns = {}
+    exec "def helper_func(%s): pass" %(func_params, ) in ns
+    actual = parameterized_argument_value_pairs(ns["helper_func"], p)
+    assert_equal(actual, expected)

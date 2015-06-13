@@ -1,7 +1,7 @@
 import re
 import inspect
 from functools import wraps
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 from nose.tools import nottest
 from unittest import TestCase
@@ -80,28 +80,75 @@ class param(_param):
     def __repr__(self):
         return "param(*%r, **%r)" %self
 
-def parameterized_argument_value_pairs(parameters, function_spec):
+
+class QuietOrderedDict(OrderedDict):
+    __str__ = dict.__str__
+    __repr__ = dict.__repr__
+
+
+def parameterized_argument_value_pairs(func, p):
     """Return tuples of parameterized arguments and their values.
 
-    This is useful if you are writing your own testcase_func_doc
-    function and need to know the values for each parameter name.
+        This is useful if you are writing your own testcase_func_doc
+        function and need to know the values for each parameter name::
+
+            >>> def func(a, foo=None, bar=42, **kwargs): pass
+            >>> p = param(1, foo=7, extra=99)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("a", 1), ("foo", 7), ("bar", 42), ("**kwargs", {"extra": 99})]
+
+        If the function's first argument is named ``self`` then it will be
+        ignored::
+
+            >>> def func(self, a): pass
+            >>> p = param(1)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("a", 1)]
+
+        Additionally, empty ``*args`` or ``**kwargs`` will be ignored::
+
+            >>> def func(foo, *args): pass
+            >>> p = param(1)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("foo", 1)]
+            >>> p = param(1, 16)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("foo", 1), ("*args", (16, ))]
     """
-    function_argspec = inspect.getargspec(function_spec)
+    argspec = inspect.getargspec(func)
 
-    args = parameters.args
-    num_defaults = len(function_argspec.defaults or list())
-    num_args = len(function_argspec.args or list())
-    kwargs = dict(zip(function_argspec.args[num_args - num_defaults:],
-                      function_argspec.defaults or list()))
-    kwargs.update(parameters.kwargs)
+    named_args = argspec.args
 
-    return (zip(function_argspec.args[1:num_args], args) +
-            [(k, v) for k, v in kwargs.items()])
+    result = zip(named_args, p.args)
+    named_args = argspec.args[len(result):]
+    varargs = p.args[len(result):]
+
+    result.extend([
+        (name, p.kwargs.get(name, default))
+        for (name, default)
+        in zip(named_args, argspec.defaults or [])
+    ])
+
+    seen_arg_names = set([ n for (n, _) in result ])
+    keywords = QuietOrderedDict(sorted([
+        (name, p.kwargs[name])
+        for name in p.kwargs
+        if name not in seen_arg_names
+    ]))
+
+    if varargs:
+        result.append(("*%s" %(argspec.varargs, ), tuple(varargs)))
+
+    if keywords:
+        result.append(("**%s" %(argspec.keywords, ), keywords))
+
+    return result
+
 
 
 def default_testcase_func_doc(f, num, p):
 
-    all_args_with_values = parameterized_argument_value_pairs(p, f)
+    all_args_with_values = parameterized_argument_value_pairs(f, p)
 
     def short_repr(x, ln=64):
         x_repr = repr(x)
