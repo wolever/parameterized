@@ -216,6 +216,7 @@ class TestOldStyleClass:
     def test_old_style_classes(self, param):
         missing_tests.remove("test_on_old_style_class(%r)" %(param, ))
 
+
 @parameterized([
     ("foo", param(1), [("foo", 1)]),
     ("foo, *a", param(1), [("foo", 1)]),
@@ -235,6 +236,7 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
     exec "def helper_func(%s): pass" %(func_params, ) in ns
     actual = parameterized_argument_value_pairs(ns["helper_func"], p)
     assert_equal(actual, expected)
+
 
 @parameterized([
     ("abcd", "abcd"),

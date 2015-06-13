@@ -317,13 +317,6 @@ class parameterized(object):
             """
 
         def parameterized_expand_wrapper(f, instance=None):
-            # Throw a runtime error if the very first argument is
-            # not self. Either the code is not PEP8 compliant, or
-            # this is not a method, and parameterized.expand
-            # can only be used on methods.
-            if inspect.getargspec(f).args[0] != "self":
-                raise RuntimeError("First argument must be 'self'.")
-
             stack = inspect.stack()
             frame = stack[1]
             frame_locals = frame[0].f_locals
