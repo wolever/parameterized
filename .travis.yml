@@ -4,8 +4,8 @@ python:
   - 2.6
   - 2.7
   - pypy
-  - 3.2
   - 3.3
+  - 3.4
 install:
   - "pip install --use-mirrors nose==1.2.1"
   - "python setup.py develop"
