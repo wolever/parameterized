@@ -1,24 +1,38 @@
 import re
+import sys
 import inspect
 from functools import wraps
 from collections import namedtuple
 
+try:
+    from collections import OrderedDict as MaybeOrderedDict
+except ImportError:
+    MaybeOrderedDict = dict
+
 from nose.tools import nottest
 from unittest import TestCase
 
-from . import compat
+PY3 = sys.version_info[0] == 3
 
-if compat.PY3:
+if PY3:
     def new_instancemethod(f, *args):
         return f
 
     # Python 3 doesn't have an InstanceType, so just use a dummy type.
     class InstanceType():
         pass
+    lzip = lambda *a: list(zip(*a))
+    text_type = str
+    string_types = str,
+    bytes_type = bytes
 else:
     import new
     new_instancemethod = new.instancemethod
     from types import InstanceType
+    lzip = zip
+    text_type = unicode
+    bytes_type = str
+    string_types = basestring,
 
 _param = namedtuple("param", "args kwargs")
 
@@ -73,12 +87,120 @@ class param(_param):
             """
         if isinstance(args, param):
             return args
-        if isinstance(args, compat.string_types):
+        if isinstance(args, string_types):
             args = (args, )
         return cls(*args)
 
     def __repr__(self):
         return "param(*%r, **%r)" %self
+
+
+class QuietOrderedDict(MaybeOrderedDict):
+    """ When OrderedDict is available, use it to make sure that the kwargs in
+        doc strings are consistently ordered. """
+    __str__ = dict.__str__
+    __repr__ = dict.__repr__
+
+
+def parameterized_argument_value_pairs(func, p):
+    """Return tuples of parameterized arguments and their values.
+
+        This is useful if you are writing your own testcase_func_doc
+        function and need to know the values for each parameter name::
+
+            >>> def func(a, foo=None, bar=42, **kwargs): pass
+            >>> p = param(1, foo=7, extra=99)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("a", 1), ("foo", 7), ("bar", 42), ("**kwargs", {"extra": 99})]
+
+        If the function's first argument is named ``self`` then it will be
+        ignored::
+
+            >>> def func(self, a): pass
+            >>> p = param(1)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("a", 1)]
+
+        Additionally, empty ``*args`` or ``**kwargs`` will be ignored::
+
+            >>> def func(foo, *args): pass
+            >>> p = param(1)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("foo", 1)]
+            >>> p = param(1, 16)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("foo", 1), ("*args", (16, ))]
+    """
+    argspec = inspect.getargspec(func)
+    arg_offset = 1 if argspec.args[0] == "self" else 0
+
+    named_args = argspec.args[arg_offset:]
+
+    result = lzip(named_args, p.args)
+    named_args = argspec.args[len(result) + arg_offset:]
+    varargs = p.args[len(result):]
+
+    result.extend([
+        (name, p.kwargs.get(name, default))
+        for (name, default)
+        in zip(named_args, argspec.defaults or [])
+    ])
+
+    seen_arg_names = set([ n for (n, _) in result ])
+    keywords = QuietOrderedDict(sorted([
+        (name, p.kwargs[name])
+        for name in p.kwargs
+        if name not in seen_arg_names
+    ]))
+
+    if varargs:
+        result.append(("*%s" %(argspec.varargs, ), tuple(varargs)))
+
+    if keywords:
+        result.append(("**%s" %(argspec.keywords, ), keywords))
+
+    return result
+
+def short_repr(x, n=64):
+    """ A shortened repr of ``x`` which is guaranteed to be ``unicode``::
+
+            >>> short_repr("foo")
+            u"foo"
+            >>> short_repr("123456789", n=4)
+            u"12...89"
+    """
+
+    x_repr = repr(x)
+    if isinstance(x_repr, bytes_type):
+        try:
+            x_repr = text_type(x_repr, "utf-8")
+        except UnicodeDecodeError:
+            x_repr = text_type(x_repr, "latin1")
+    if len(x_repr) > n:
+        x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
+    return x_repr
+
+def default_testcase_func_doc(func, num, p):
+    if func.__doc__ is None:
+        return None
+
+    all_args_with_values = parameterized_argument_value_pairs(func, p)
+
+    # Assumes that the function passed is a bound method.
+    descs = [u"{0}={1}".format(n, short_repr(v)) for n, v in all_args_with_values]
+
+    # The documentation might be a multiline string, so split it
+    # and just work with the first string, ignoring the period
+    # at the end if there is one.
+    split_doc = func.__doc__.split("\n")
+    first = split_doc[0]
+    append = u""
+    if first[-1] == ".":
+        append = u"."
+        first = first[:-1]
+
+    first = first + u" [with {0}]".format(", ".join(descs)) + append
+    return u"\n".join([first] + split_doc[1:])
 
 class parameterized(object):
     """ Parameterize a test case::
@@ -195,7 +317,7 @@ class parameterized(object):
         return input_values
 
     @classmethod
-    def expand(cls, input, testcase_func_name=None):
+    def expand(cls, input, testcase_func_name=None, testcase_func_doc=None):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
@@ -211,7 +333,7 @@ class parameterized(object):
             >>>
             """
 
-        def parameterized_expand_wrapper(f):
+        def parameterized_expand_wrapper(f, instance=None):
             stack = inspect.stack()
             frame = stack[1]
             frame_locals = frame[0].f_locals
@@ -225,10 +347,15 @@ class parameterized(object):
                     name = testcase_func_name(f, num, p)
                 else:
                     name_suffix = "_%s" %(num, )
-                    if len(p.args) > 0 and isinstance(p.args[0], compat.string_types):
+                    if len(p.args) > 0 and isinstance(p.args[0], string_types):
                         name_suffix += "_" + cls.to_safe_name(p.args[0])
                     name = base_name + name_suffix
+
+                testcase_func_doc_func = (testcase_func_doc or default_testcase_func_doc)
+                doc = testcase_func_doc_func(f, num, p)
+
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
+                frame_locals[name].__doc__ = doc
             return nottest(f)
         return parameterized_expand_wrapper
 
