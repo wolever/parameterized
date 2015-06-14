@@ -5,9 +5,9 @@ from functools import wraps
 from collections import namedtuple
 
 try:
-    from collections import OrderedDict
+    from collections import OrderedDict as MaybeOrderedDict
 except ImportError:
-    from ordereddict import OrderedDict
+    MaybeOrderedDict = dict
 
 from nose.tools import nottest
 from unittest import TestCase
@@ -95,7 +95,9 @@ class param(_param):
         return "param(*%r, **%r)" %self
 
 
-class QuietOrderedDict(OrderedDict):
+class QuietOrderedDict(MaybeOrderedDict):
+    """ When OrderedDict is available, use it to make sure that the kwargs in
+        doc strings are consistently ordered. """
     __str__ = dict.__str__
     __repr__ = dict.__repr__
 
