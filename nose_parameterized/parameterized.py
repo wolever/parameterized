@@ -1,4 +1,5 @@
 import re
+import sys
 import inspect
 from functools import wraps
 from collections import namedtuple
@@ -11,19 +12,27 @@ except ImportError:
 from nose.tools import nottest
 from unittest import TestCase
 
-from . import compat
+PY3 = sys.version_info[0] == 3
 
-if compat.PY3:
+if PY3:
     def new_instancemethod(f, *args):
         return f
 
     # Python 3 doesn't have an InstanceType, so just use a dummy type.
     class InstanceType():
         pass
+    lzip = lambda *a: list(zip(*a))
+    text_type = str
+    string_types = str,
+    bytes_type = bytes
 else:
     import new
     new_instancemethod = new.instancemethod
     from types import InstanceType
+    lzip = zip
+    text_type = unicode
+    bytes_type = str
+    string_types = basestring,
 
 _param = namedtuple("param", "args kwargs")
 
@@ -78,7 +87,7 @@ class param(_param):
             """
         if isinstance(args, param):
             return args
-        if isinstance(args, compat.string_types):
+        if isinstance(args, string_types):
             args = (args, )
         return cls(*args)
 
@@ -125,7 +134,7 @@ def parameterized_argument_value_pairs(func, p):
 
     named_args = argspec.args[arg_offset:]
 
-    result = zip(named_args, p.args)
+    result = lzip(named_args, p.args)
     named_args = argspec.args[len(result) + arg_offset:]
     varargs = p.args[len(result):]
 
@@ -160,11 +169,11 @@ def short_repr(x, n=64):
     """
 
     x_repr = repr(x)
-    if isinstance(x_repr, str):
+    if isinstance(x_repr, bytes_type):
         try:
-            x_repr = unicode(x_repr, "utf-8")
+            x_repr = text_type(x_repr, "utf-8")
         except UnicodeDecodeError:
-            x_repr = unicode(x_repr, "latin1")
+            x_repr = text_type(x_repr, "latin1")
     if len(x_repr) > n:
         x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
     return x_repr
@@ -336,7 +345,7 @@ class parameterized(object):
                     name = testcase_func_name(f, num, p)
                 else:
                     name_suffix = "_%s" %(num, )
-                    if len(p.args) > 0 and isinstance(p.args[0], compat.string_types):
+                    if len(p.args) > 0 and isinstance(p.args[0], string_types):
                         name_suffix += "_" + cls.to_safe_name(p.args[0])
                     name = base_name + name_suffix
 

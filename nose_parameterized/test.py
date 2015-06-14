@@ -5,9 +5,8 @@ from unittest import TestCase
 from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
 
-from .compat import PY3
 from .parameterized import (
-    parameterized, param, parameterized_argument_value_pairs, short_repr,
+    PY3, parameterized, param, parameterized_argument_value_pairs, short_repr,
 )
 
 def assert_contains(haystack, needle):
@@ -212,9 +211,8 @@ class TestOldStyleClass:
     ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3, )), ("**kw", {"z": 3})]),
 ])
 def test_parameterized_argument_value_pairs(func_params, p, expected):
-    ns = {}
-    exec "def helper_func(%s): pass" %(func_params, ) in ns
-    actual = parameterized_argument_value_pairs(ns["helper_func"], p)
+    helper = eval("lambda %s: None" %(func_params, ))
+    actual = parameterized_argument_value_pairs(helper, p)
     assert_equal(actual, expected)
 
 
