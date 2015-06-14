@@ -1,7 +1,12 @@
 import re
 import inspect
 from functools import wraps
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 from nose.tools import nottest
 from unittest import TestCase

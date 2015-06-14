@@ -20,4 +20,5 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     packages=find_packages(),
+    install_requires=["ordereddict", "nose>=1.2.1"]
 )
