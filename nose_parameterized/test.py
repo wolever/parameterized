@@ -219,8 +219,9 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
 
 
 @parameterized([
-    ("abcd", "abcd"),
-    ("123456789", "12...89"),
+    ("abcd", "'abcd'"),
+    ("123456789", "'12...89'"),
+    (123456789, "123...789")  # number types do not have quotes, so we can repr more
 ])
-def test_short_repr(input, expected, n=4):
+def test_short_repr(input, expected, n=6):
     assert_equal(short_repr(input, n=n), expected)
