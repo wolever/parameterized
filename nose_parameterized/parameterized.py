@@ -181,7 +181,7 @@ def short_repr(x, n=64):
     return x_repr
 
 def default_testcase_func_doc(func, num, p):
-    if func.__doc__ is None:
+    if func.__doc__ is None or not func.__doc__.strip():
         return None
 
     all_args_with_values = parameterized_argument_value_pairs(func, p)
@@ -192,7 +192,7 @@ def default_testcase_func_doc(func, num, p):
     # The documentation might be a multiline string, so split it
     # and just work with the first string, ignoring the period
     # at the end if there is one.
-    split_doc = func.__doc__.split("\n")
+    split_doc = func.__doc__.strip().split("\n")
     first = split_doc[0]
     append = u""
     if first[-1] == ".":
