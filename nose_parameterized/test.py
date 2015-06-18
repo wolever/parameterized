@@ -81,66 +81,45 @@ class TestParamerizedOnTestCase(TestCase):
         missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
 
 class TestParameterizedExpandDocstring(TestCase):
-
-    def _get_test_method_documentation(self):
-        """Get test method documentation.
-
-        This function must be called directly by a test method
-        in this class, as it uses inspect to walk the call stack to find
-        the test methods's documentation.
-        """
+    def _assert_docstring(self, expected_docstring):
+        """ Checks the current test method's docstring. Must be called directly
+            from the test method. """
         stack = inspect.stack()
-        frame = stack[2]
-        frame_locals = frame[0].f_locals
-        return frame_locals['a'][0]._testMethodDoc
-
-    def _assert_documentation_is_equal(self,
-                                       actual_test_method_doc,
-                                       expected_test_method_doc):
-        """Wrapper around assert_equal for test method documentation."""
-        assert_equal(actual_test_method_doc,
-                     expected_test_method_doc,
-                     "Test Method doc '%s' did not get customized to expected: '%s'" %
-                     (actual_test_method_doc, expected_test_method_doc))
+        f_locals = stack[3][0].f_locals
+        actual_docstring = f_locals["testMethod"].__doc__
+        assert_equal(actual_docstring, expected_docstring)
 
     @parameterized.expand([param("foo")],
-                          testcase_func_doc=custom_doc_func)
+                          testcase_func_doc=lambda f, n, p: "stuff")
     def test_custom_doc_func(self, foo, bar=None):
         """Documentation"""
-        expected_doc = "Documentation " + str(foo)
-        actual_doc = self._get_test_method_documentation()
-        self._assert_documentation_is_equal(actual_doc, expected_doc)
+        self._assert_docstring("stuff")
 
     @parameterized.expand([param("foo")])
-    def test_single_line_documentation(self, foo):
+    def test_single_line_docstring(self, foo):
         """Documentation."""
-        expected_doc = ("Documentation [with foo=%r]." % (foo))
-        actual_doc = self._get_test_method_documentation()
-        self._assert_documentation_is_equal(actual_doc, expected_doc)
+        self._assert_docstring("Documentation [with foo=%r]." %(foo, ))
 
     @parameterized.expand([param("foo")])
     def test_multiline_documentation(self, foo):
         """Documentation.
 
         More"""
-        expected_doc = ("Documentation [with foo=%r].\n\n"
-                        "        More" % (foo))
-        actual_doc = self._get_test_method_documentation()
-        self._assert_documentation_is_equal(actual_doc, expected_doc)
+        self._assert_docstring(
+            "Documentation [with foo=%r].\n\n"
+            "        More" %(foo, )
+        )
 
     @parameterized.expand([param("foo")])
-    def test_unicode_documentation(self, foo):
+    def test_unicode_docstring(self, foo):
         u"""Döcumentation."""
-        expected_doc = (u"Döcumentation [with foo=%r]." % (foo))
-        actual_doc = self._get_test_method_documentation()
-        self._assert_documentation_is_equal(actual_doc, expected_doc)
+        self._assert_docstring(u"Döcumentation [with foo=%r]." %(foo, ))
 
     @parameterized.expand([param("foo", )])
     def test_default_values_get_correct_value(self, foo, bar=12):
         """Documentation"""
-        expected_doc = "Documentation [with foo=%r, bar=%r]" % (foo, bar)
-        actual_doc = self._get_test_method_documentation()
-        self._assert_documentation_is_equal(actual_doc, expected_doc)
+        self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar))
+
 
 def test_warns_when_using_parameterized_with_TestCase():
     try:
