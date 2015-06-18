@@ -86,8 +86,13 @@ class TestParameterizedExpandDocstring(TestCase):
             from the test method. """
         stack = inspect.stack()
         f_locals = stack[3][0].f_locals
-        actual_docstring = f_locals["testMethod"].__doc__
-        assert_equal(actual_docstring, expected_docstring)
+        test_method = (
+            f_locals.get("testMethod") or # Py27
+            f_locals.get("function") # Py33
+        )
+        if test_method is None:
+            raise AssertionError("uh oh, unittest changed a local variable name")
+        assert_equal(test_method.__doc__, expected_docstring)
 
     @parameterized.expand([param("foo")],
                           testcase_func_doc=lambda f, n, p: "stuff")
@@ -99,6 +104,11 @@ class TestParameterizedExpandDocstring(TestCase):
     def test_single_line_docstring(self, foo):
         """Documentation."""
         self._assert_docstring("Documentation [with foo=%r]." %(foo, ))
+
+    @parameterized.expand([param("foo")])
+    def test_empty_docstring(self, foo):
+        ""
+        self._assert_docstring("[with foo=%r]" %(foo, ))
 
     @parameterized.expand([param("foo")])
     def test_multiline_documentation(self, foo):

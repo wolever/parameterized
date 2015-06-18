@@ -187,20 +187,18 @@ def default_testcase_func_doc(func, num, p):
     all_args_with_values = parameterized_argument_value_pairs(func, p)
 
     # Assumes that the function passed is a bound method.
-    descs = [u"{0}={1}".format(n, short_repr(v)) for n, v in all_args_with_values]
+    descs = ["%s=%s" %(n, short_repr(v)) for n, v in all_args_with_values]
 
     # The documentation might be a multiline string, so split it
     # and just work with the first string, ignoring the period
     # at the end if there is one.
-    split_doc = func.__doc__.split("\n")
-    first = split_doc[0]
-    append = u""
-    if first[-1] == ".":
-        append = u"."
+    first, nl, rest = func.__doc__.partition("\n")
+    suffix = ""
+    if first.endswith("."):
+        suffix = "."
         first = first[:-1]
-
-    first = first + u" [with {0}]".format(", ".join(descs)) + append
-    return u"\n".join([first] + split_doc[1:])
+    args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
+    return "".join([first, args, suffix, nl, rest])
 
 class parameterized(object):
     """ Parameterize a test case::
