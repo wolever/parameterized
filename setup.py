@@ -9,7 +9,7 @@ os.chdir(os.path.dirname(sys.argv[0]) or ".")
 
 setup(
     name="nose-parameterized",
-    version="0.4.0",
+    version="0.4.1",
     url="https://github.com/wolever/nose-parameterized",
     author="David Wolever",
     author_email="david@wolever.net",

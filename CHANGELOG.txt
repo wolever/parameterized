@@ -1,3 +1,7 @@
+0.4.1 (2015-05-17)
+    * Fix bug with expand + empty docstring (thanks @jikamens;
+      https://github.com/wolever/nose-parameterized/pull/24)
+
 0.4.0 (2015-05-11)
     * Include parameters in ``parameterized.expand`` function docstrings
       (https://github.com/wolever/nose-parameterized/pull/22; thanks
