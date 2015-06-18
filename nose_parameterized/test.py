@@ -58,9 +58,6 @@ def custom_naming_func(custom_tag):
 
     return custom_naming_func
 
-def custom_doc_func(testcase_func, param_num, param):
-    return testcase_func.__doc__ + ' ' + str(param.args[0])
-
 
 class TestParamerizedOnTestCase(TestCase):
     @parameterized.expand(test_params)
@@ -79,6 +76,7 @@ class TestParamerizedOnTestCase(TestCase):
                      "Test Method name '%s' did not get customized to expected: '%s'" %
                      (nose_test_method_name, expected_name))
         missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
+
 
 class TestParameterizedExpandDocstring(TestCase):
     def _assert_docstring(self, expected_docstring):
