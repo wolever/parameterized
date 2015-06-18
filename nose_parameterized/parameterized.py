@@ -132,7 +132,24 @@ def parameterized_argument_value_pairs(func, p):
             [("foo", 1), ("*args", (16, ))]
     """
     argspec = inspect.getargspec(func)
-    arg_offset = 1 if argspec.args[0] == "self" else 0
+    # It may seem to you that @parameterized.expand will never be
+    # applied to functions with no arguments so checking that
+    # argspec.args is non-empty is unnecessary, but consider this:
+    #
+    #     @parameterized.expand(...)
+    #     @some_other_decorator()
+    #     def test_whatever(self, ...)
+    #
+    # The wider implication of this is that
+    # `parameterized_argument_value_pairs` actually doesn't work as
+    # intended when @parameterized.expand precedes another decorator
+    # rather than being directly attached to the test function it's
+    # expanding, but I'm not at all certain what if anything should be
+    # done about that, and at least checking if argspec.args is
+    # non-empty before trying to dereference it, returns us to the
+    # status quo ante, i.e., makes test cases that worked in 0.3.5
+    # continue to work in 0.4.x.
+    arg_offset = 1 if argspec.args and argspec.args[0] == "self" else 0
 
     named_args = argspec.args[arg_offset:]
 
