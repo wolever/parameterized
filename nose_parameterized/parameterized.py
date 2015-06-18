@@ -132,7 +132,7 @@ def parameterized_argument_value_pairs(func, p):
             [("foo", 1), ("*args", (16, ))]
     """
     argspec = inspect.getargspec(func)
-    arg_offset = 1 if argspec.args[0] == "self" else 0
+    arg_offset = 1 if argspec.args[:1] == ["self"] else 0
 
     named_args = argspec.args[arg_offset:]
 

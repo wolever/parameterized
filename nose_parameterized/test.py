@@ -184,6 +184,9 @@ class TestOldStyleClass:
 
 
 @parameterized([
+    ("", param(), []),
+    ("*a, **kw", param(), []),
+    ("*a, **kw", param(1, foo=42), [("*a", (1, )), ("**kw", {"foo": 42})]),
     ("foo", param(1), [("foo", 1)]),
     ("foo, *a", param(1), [("foo", 1)]),
     ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9, ))]),
