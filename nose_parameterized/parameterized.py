@@ -9,7 +9,6 @@ try:
 except ImportError:
     MaybeOrderedDict = dict
 
-from nose.tools import nottest
 from unittest import TestCase
 
 PY3 = sys.version_info[0] == 3
@@ -354,7 +353,7 @@ class parameterized(object):
 
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
                 frame_locals[name].__doc__ = doc
-            return nottest(f)
+            f.__test__ = False
         return parameterized_expand_wrapper
 
     @classmethod
