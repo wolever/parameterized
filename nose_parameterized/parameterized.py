@@ -12,6 +12,8 @@ except ImportError:
 from unittest import TestCase
 
 PY3 = sys.version_info[0] == 3
+PY2 = sys.version_info[0] == 2
+
 
 if PY3:
     def new_instancemethod(f, *args):
@@ -361,8 +363,19 @@ class parameterized(object):
         @wraps(func)
         def standalone_func(*a):
             return func(*(a + p.args), **p.kwargs)
-
         standalone_func.__name__ = name
+
+        # place_as is used by py.test to determine what source file should be
+        # used for this test.
+        standalone_func.place_as = func
+
+        # Remove __wrapped__ because py.test will try to look at __wrapped__
+        # to determine which parameters should be used with this test case,
+        # and obviously we don't need it to do any parameterization.
+        try:
+            del standalone_func.__wrapped__
+        except AttributeError:
+            pass
         return standalone_func
 
     @classmethod

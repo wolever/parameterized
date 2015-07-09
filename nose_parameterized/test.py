@@ -6,33 +6,48 @@ from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
 
 from .parameterized import (
-    PY3, parameterized, param, parameterized_argument_value_pairs, short_repr,
+    PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
+    short_repr,
 )
 
 def assert_contains(haystack, needle):
     if needle not in haystack:
         raise AssertionError("%r not in %r" %(needle, haystack))
 
-missing_tests = set([
-    "test_naked_function(42, bar=None)",
-    "test_naked_function('foo0', bar=None)",
-    "test_naked_function('foo1', bar=None)",
-    "test_naked_function('foo2', bar=42)",
-    "test_instance_method(42, bar=None)",
-    "test_instance_method('foo0', bar=None)",
-    "test_instance_method('foo1', bar=None)",
-    "test_instance_method('foo2', bar=42)",
-    "test_on_TestCase(42, bar=None)",
-    "test_on_TestCase('foo0', bar=None)",
-    "test_on_TestCase('foo1', bar=None)",
-    "test_on_TestCase('foo2', bar=42)",
-    "test_on_TestCase2_custom_name_42(42, bar=None)",
-    "test_on_TestCase2_custom_name_foo0('foo0', bar=None)",
-    "test_on_TestCase2_custom_name_foo1('foo1', bar=None)",
-    "test_on_TestCase2_custom_name_foo2('foo2', bar=42)",
-    "test_on_old_style_class('foo')",
-    "test_on_old_style_class('bar')",
-])
+def detect_runner(candidates):
+    for x in reversed(inspect.stack()):
+        frame = x[0]
+        for mod in candidates:
+            frame_mod = frame.f_globals.get("__name__", "")
+            if frame_mod == mod or frame_mod.startswith(mod + "."):
+                return mod
+    return "<unknown>"
+
+runner = detect_runner(["nose", "nose2","unittest", "unittest2"])
+UNITTEST = runner.startswith("unittest")
+NOSE2 = (runner == "nose2")
+
+SKIP_FLAGS = {
+    "generator": UNITTEST,
+    # nose2 doesn't run tests on old-style classes under Py2, so don't expect
+    # these tests to run under nose2.
+    "py2nose2": (PY2 and NOSE2),
+}
+
+missing_tests = set()
+
+def expect(skip, tests=None):
+    if tests is None:
+        tests = skip
+        skip = None
+    if any(SKIP_FLAGS.get(f) for f in (skip or "").split()):
+        return
+    missing_tests.update(tests)
+
+
+if not (PY2 and NOSE2):
+    missing_tests.update([
+    ])
 
 test_params = [
     (42, ),
@@ -41,12 +56,26 @@ test_params = [
     param("foo2", bar=42),
 ]
 
+expect("generator", [
+    "test_naked_function('foo0', bar=None)",
+    "test_naked_function('foo1', bar=None)",
+    "test_naked_function('foo2', bar=42)",
+    "test_naked_function(42, bar=None)",
+])
+
 @parameterized(test_params)
 def test_naked_function(foo, bar=None):
     missing_tests.remove("test_naked_function(%r, bar=%r)" %(foo, bar))
 
 
 class TestParameterized(object):
+    expect("generator", [
+        "test_instance_method('foo0', bar=None)",
+        "test_instance_method('foo1', bar=None)",
+        "test_instance_method('foo2', bar=42)",
+        "test_instance_method(42, bar=None)",
+    ])
+
     @parameterized(test_params)
     def test_instance_method(self, foo, bar=None):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
@@ -60,9 +89,23 @@ def custom_naming_func(custom_tag):
 
 
 class TestParamerizedOnTestCase(TestCase):
+    expect([
+        "test_on_TestCase('foo0', bar=None)",
+        "test_on_TestCase('foo1', bar=None)",
+        "test_on_TestCase('foo2', bar=42)",
+        "test_on_TestCase(42, bar=None)",
+    ])
+
     @parameterized.expand(test_params)
     def test_on_TestCase(self, foo, bar=None):
         missing_tests.remove("test_on_TestCase(%r, bar=%r)" %(foo, bar))
+
+    expect([
+        "test_on_TestCase2_custom_name_42(42, bar=None)",
+        "test_on_TestCase2_custom_name_foo0('foo0', bar=None)",
+        "test_on_TestCase2_custom_name_foo1('foo1', bar=None)",
+        "test_on_TestCase2_custom_name_foo2('foo2', bar=42)",
+    ])
 
     @parameterized.expand(test_params,
                           testcase_func_name=custom_naming_func("custom"))
@@ -140,10 +183,12 @@ def test_warns_when_using_parameterized_with_TestCase():
     else:
         raise AssertionError("Expected exception not raised")
 
-missing_tests.add("test_wrapped_iterable_input()")
+expect("generator", [
+    "test_wrapped_iterable_input('foo')",
+])
 @parameterized(lambda: iter(["foo"]))
 def test_wrapped_iterable_input(foo):
-    missing_tests.remove("test_wrapped_iterable_input()")
+    missing_tests.remove("test_wrapped_iterable_input(%r)" %(foo, ))
 
 def test_helpful_error_on_non_iterable_input():
     try:
@@ -155,10 +200,9 @@ def test_helpful_error_on_non_iterable_input():
         raise AssertionError("Expected exception not raised")
 
 
-def teardown_module():
+def tearDownModule():
     missing = sorted(list(missing_tests))
     assert_equal(missing, [])
-
 
 def test_old_style_classes():
     if PY3:
@@ -178,6 +222,11 @@ def test_old_style_classes():
 
 
 class TestOldStyleClass:
+    expect("py2nose2 generator", [
+        "test_on_old_style_class('foo')",
+        "test_on_old_style_class('bar')",
+    ])
+
     @parameterized.expand(["foo", "bar"])
     def test_old_style_classes(self, param):
         missing_tests.remove("test_on_old_style_class(%r)" %(param, ))

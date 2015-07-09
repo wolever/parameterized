@@ -1,16 +1,10 @@
-``nose-parameterized`` is a decorator for parameterized testing with ``nose``
-=============================================================================
+Parameterized testing with any Python test framework
+====================================================
 
-*Now with 100% less Python 3 incompatibility!*
+Parameterized testing in Python sucks.
 
-Nose. It's got test generators. But they kind of suck:
-
-    * They often require a second function
-    * They make it difficult to separate the data from the test
-    * They don't work with subclases of ``unittest.TestCase``
-    * ``kwargs``? What ``kwargs``?
-
-But ``nose-parameterized`` fixes that:
+``nose-parameterized`` fixes that. For everything. Parameterized testing for
+nose, parameterized testing for py.test, parameterized testing for unittest.
 
 .. code:: python
 
@@ -39,7 +33,7 @@ But ``nose-parameterized`` fixes that:
         def test_floor(self, name, input, expected):
             assert_equal(math.floor(input), expected)
 
-::
+With nose (and nose2)::
 
     $ nosetests -v test_math.py
     test_math.test_pow(2, 2, 4) ... ok
@@ -54,6 +48,96 @@ But ``nose-parameterized`` fixes that:
     Ran 7 tests in 0.002s
 
     OK
+
+As the package name suggests, nose is best supported and will be used for all
+further examples.
+
+With py.test (version 2.0 and above)::
+
+    $ py.test -v test_math.py
+    ============================== test session starts ==============================
+    platform darwin -- Python 2.7.2 -- py-1.4.30 -- pytest-2.7.1
+    collected 7 items
+
+    test_math.py::test_pow::[0] PASSED
+    test_math.py::test_pow::[1] PASSED
+    test_math.py::test_pow::[2] PASSED
+    test_math.py::test_pow::[3] PASSED
+    test_math.py::TestMathUnitTest::test_floor_0_negative
+    test_math.py::TestMathUnitTest::test_floor_1_integer
+    test_math.py::TestMathUnitTest::test_floor_2_large_fraction
+
+    =========================== 7 passed in 0.10 seconds ============================
+
+With unittest (and unittest2)::
+
+    $ python -m unittest -v test_math
+    test_floor_0_negative (test_math.TestMathUnitTest) ... ok
+    test_floor_1_integer (test_math.TestMathUnitTest) ... ok
+    test_floor_2_large_fraction (test_math.TestMathUnitTest) ... ok
+
+    ----------------------------------------------------------------------
+    Ran 3 tests in 0.000s
+
+    OK
+
+(note: because unittest does not support test decorators, only tests created
+with ``@parameterized.expand`` will be executed)
+
+Compatibility
+-------------
+
+`Yes`__.
+
+__ https://travis-ci.org/wolever/nose-parameterized
+
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * -
+     - Py2.6
+     - Py2.7
+     - Py3.3
+     - Py3.4
+     - PyPy
+   * - nose
+     - yes
+     - yes
+     - yes
+     - yes
+     - yes
+   * - nose2
+     - yes
+     - yes
+     - yes
+     - yes
+     - yes
+   * - py.test
+     - yes
+     - yes
+     - yes
+     - yes
+     - yes
+   * - | unittest
+       | (``@parameterized.expand``)
+     - yes
+     - yes
+     - yes
+     - yes
+     - yes
+   * - | unittest2
+       | (``@parameterized.expand``)
+     - yes
+     - yes
+     - yes
+     - yes
+     - yes
+
+Dependencies
+------------
+
+(this section left intentionally blank)
 
 
 Exhaustive Usage Examples
@@ -213,3 +297,22 @@ case.  It can be used to pass keyword arguments to test cases:
     ])
     def test_int(str_val, expected, base=10):
         assert_equal(int(str_val, base=base), expected)
+
+
+FAQ
+---
+
+If all the major testing frameworks are supported, why is it called ``nose-parameterized``?
+    Originally only nose was supported. But now everything is supported!
+
+What do you mean when you say "nose is best supported"?
+    There are small caveates with ``py.test`` and ``unittest``: ``py.test``
+    does not show the parameter values (ex, it will show ``test_add[0]``
+    instead of ``test_add[1, 2, 3]``), and ``unittest``/``unittest2`` do not
+    support test generators so ``@parameterized.expand`` must be used.
+
+
+Why not use ``@pytest.mark.parametrize``?
+    Because spelling is difficult. Also, ``nose-parameterized`` doesn't
+    require you to repeat argument names, and (using ``param``) it supports
+    optional keyword arguments.

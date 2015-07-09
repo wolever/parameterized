@@ -1,12 +1,25 @@
 language: python
 sudo: false
-python:
-  - 2.6
-  - 2.7
-  - pypy
-  - 3.3
-  - 3.4
-install:
-  - "pip install --use-mirrors nose==1.2.1"
-  - "python setup.py develop"
-script: nosetests
+env:
+  - TOXENV=py26-nose
+  - TOXENV=py26-nose2
+  - TOXENV=py26-pytest
+  - TOXENV=py26-unit
+  - TOXENV=py26-unit2
+  - TOXENV=py27-nose
+  - TOXENV=py27-nose2
+  - TOXENV=py27-pytest
+  - TOXENV=py27-unit
+  - TOXENV=py27-unit2
+  - TOXENV=py33-nose
+  - TOXENV=py33-nose2
+  - TOXENV=py33-pytest
+  - TOXENV=py33-unit
+  - TOXENV=py33-unit2
+  - TOXENV=pypy-nose
+  - TOXENV=pypy-nose2
+  - TOXENV=pypy-pytest
+  - TOXENV=pypy-unit
+  - TOXENV=pypy-unit2
+install: pip install tox
+script: tox
