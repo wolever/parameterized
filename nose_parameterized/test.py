@@ -108,7 +108,7 @@ class TestParamerizedOnTestCase(TestCase):
     ])
 
     @parameterized.expand(test_params,
-                          testcase_func_name=custom_naming_func("custom"))
+                          name_func=custom_naming_func("custom"))
     def test_on_TestCase2(self, foo, bar=None):
         stack = inspect.stack()
         frame = stack[1]
@@ -136,7 +136,7 @@ class TestParameterizedExpandDocstring(TestCase):
         assert_equal(test_method.__doc__, expected_docstring)
 
     @parameterized.expand([param("foo")],
-                          testcase_func_doc=lambda f, n, p: "stuff")
+                          doc_func=lambda f, n, p: "stuff")
     def test_custom_doc_func(self, foo, bar=None):
         """Documentation"""
         self._assert_docstring("stuff")

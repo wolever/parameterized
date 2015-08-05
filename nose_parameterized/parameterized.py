@@ -1,6 +1,7 @@
 import re
 import sys
 import inspect
+import warnings
 from functools import wraps
 from collections import namedtuple
 
@@ -106,7 +107,7 @@ class QuietOrderedDict(MaybeOrderedDict):
 def parameterized_argument_value_pairs(func, p):
     """Return tuples of parameterized arguments and their values.
 
-        This is useful if you are writing your own testcase_func_doc
+        This is useful if you are writing your own doc_func
         function and need to know the values for each parameter name::
 
             >>> def func(a, foo=None, bar=42, **kwargs): pass
@@ -181,7 +182,7 @@ def short_repr(x, n=64):
         x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
     return x_repr
 
-def default_testcase_func_doc(func, num, p):
+def default_doc_func(func, num, p):
     if func.__doc__ is None:
         return None
 
@@ -200,6 +201,13 @@ def default_testcase_func_doc(func, num, p):
         first = first[:-1]
     args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
     return "".join([first, args, suffix, nl, rest])
+
+def default_name_func(func, num, p):
+    base_name = func.__name__
+    name_suffix = "_%s" %(num, )
+    if len(p.args) > 0 and isinstance(p.args[0], string_types):
+        name_suffix += "_" + parameterized.to_safe_name(p.args[0])
+    return base_name + name_suffix
 
 class parameterized(object):
     """ Parameterize a test case::
@@ -316,7 +324,7 @@ class parameterized(object):
         return input_values
 
     @classmethod
-    def expand(cls, input, testcase_func_name=None, testcase_func_doc=None):
+    def expand(cls, input, name_func=None, doc_func=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
@@ -332,29 +340,33 @@ class parameterized(object):
             >>>
             """
 
+        if "testcase_func_name" in legacy:
+            warnings.warn("testcase_func_name= is deprecated; use name_func=",
+                          DeprecationWarning, stacklevel=2)
+            if not name_func:
+                name_func = legacy["testcase_func_name"]
+
+        if "testcase_func_doc" in legacy:
+            warnings.warn("testcase_func_doc= is deprecated; use doc_func=",
+                          DeprecationWarning, stacklevel=2)
+            if not doc_func:
+                doc_func = legacy["testcase_func_doc"]
+
+        doc_func = doc_func or default_doc_func
+        name_func = name_func or default_name_func
+
         def parameterized_expand_wrapper(f, instance=None):
             stack = inspect.stack()
             frame = stack[1]
             frame_locals = frame[0].f_locals
 
-            base_name = f.__name__
             get_input = cls.input_as_callable(input)
             for num, args in enumerate(get_input()):
                 p = param.from_decorator(args)
-                if testcase_func_name:
-                    # Caller wants to over-ride default test case func/method naming scheme.
-                    name = testcase_func_name(f, num, p)
-                else:
-                    name_suffix = "_%s" %(num, )
-                    if len(p.args) > 0 and isinstance(p.args[0], string_types):
-                        name_suffix += "_" + cls.to_safe_name(p.args[0])
-                    name = base_name + name_suffix
-
-                testcase_func_doc_func = (testcase_func_doc or default_testcase_func_doc)
-                doc = testcase_func_doc_func(f, num, p)
-
+                name = name_func(f, num, p)
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
-                frame_locals[name].__doc__ = doc
+                frame_locals[name].__doc__ = doc_func(f, num, p)
+
             f.__test__ = False
         return parameterized_expand_wrapper
 
