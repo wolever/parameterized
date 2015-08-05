@@ -200,7 +200,7 @@ def default_doc_func(func, num, p):
         suffix = "."
         first = first[:-1]
     args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
-    return "".join([first, args, suffix, nl, rest])
+    return "".join([first.rstrip(), args, suffix, nl, rest])
 
 def default_name_func(func, num, p):
     base_name = func.__name__
@@ -230,14 +230,15 @@ class parameterized(object):
                 assert_equal(a + b, expected)
         """
 
-    def __init__(self, input):
+    def __init__(self, input, doc_func=None):
         self.get_input = self.input_as_callable(input)
+        self.doc_func = doc_func or default_doc_func
 
     def __call__(self, test_func):
         self.assert_not_in_testcase_subclass()
 
         @wraps(test_func)
-        def parameterized_helper_method(test_self=None):
+        def wrapper(test_self=None):
             f = test_func
             if test_self is not None:
                 # If we are a test method (which we suppose to be true if we
@@ -248,28 +249,37 @@ class parameterized(object):
                 f = self.make_bound_method(test_self, test_func)
             # Note: because nose is so very picky, the more obvious
             # ``return self.yield_nose_tuples(f)`` won't work here.
-            for nose_tuple in self.yield_nose_tuples(f):
+            for nose_tuple in self.yield_nose_tuples(f, wrapper):
                 yield nose_tuple
 
         test_func.__name__ = "_helper_for_%s" %(test_func.__name__, )
-        parameterized_helper_method.parameterized_input = input
-        parameterized_helper_method.parameterized_func = test_func
-        return parameterized_helper_method
+        wrapper.parameterized_input = self.get_input()
+        wrapper.parameterized_func = test_func
+        return wrapper
 
-    def yield_nose_tuples(self, func):
-        for args in self.get_input():
+    def yield_nose_tuples(self, func, wrapper):
+        original_doc = wrapper.__doc__
+        for num, args in enumerate(wrapper.parameterized_input):
             p = param.from_decorator(args)
             # ... then yield that as a tuple. If those steps aren't
             # followed precicely, Nose gets upset and doesn't run the test
             # or doesn't run setup methods.
-            yield self.param_as_nose_tuple(p, func)
+            nose_tuple = self.param_as_nose_tuple(func, num, p)
+            nose_func = nose_tuple[0]
+            try:
+                wrapper.__doc__ = nose_func.__doc__
+                yield nose_tuple
+            finally:
+                wrapper.__doc__ = original_doc
 
-    def param_as_nose_tuple(self, p, func):
-        nose_func = func
-        nose_args = p.args
+    def param_as_nose_tuple(self, func, num, p):
         if p.kwargs:
             nose_func = wraps(func)(lambda args, kwargs: func(*args, **kwargs))
             nose_args = (p.args, p.kwargs)
+        else:
+            nose_func = wraps(func)(lambda *args: func(*args))
+            nose_args = p.args
+        nose_func.__doc__ = self.doc_func(func, num, p)
         return (nose_func, ) + nose_args
 
     def make_bound_method(self, instance, func):

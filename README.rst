@@ -299,6 +299,46 @@ case.  It can be used to pass keyword arguments to test cases:
         assert_equal(int(str_val, base=base), expected)
 
 
+If test cases have a docstring, the parameters for that test case will be
+appended to the first line of the docstring. This behavior can be controlled
+with the ``doc_func`` argument:
+
+.. code:: python
+
+    from nose_parameterized import parameterized
+
+    @parameterized([
+        (1, 2, 3),
+        (4, 5, 9),
+    ])
+    def test_add(a, b, expected):
+        """ Test addition. """
+        assert_equal(a + b, expected)
+
+    def my_doc_func(func, num, param):
+        return "%s: %s with %s" %(num, func.__name__, param)
+
+    @parameterized([
+        (5, 4, 1),
+        (9, 6, 3),
+    ], doc_func=my_doc_func)
+    def test_subtraction(a, b, expected):
+        assert_equal(a - b, expected)
+
+::
+
+    $ nosetests example.py
+    Test addition. [with a=1, b=2, expected=3] ... ok
+    Test addition. [with a=4, b=5, expected=9] ... ok
+    0: test_subtraction with param(*(5, 4, 1)) ... ok
+    1: test_subtraction with param(*(9, 6, 3)) ... ok
+
+    ----------------------------------------------------------------------
+    Ran 4 tests in 0.001s
+
+    OK
+
+
 FAQ
 ---
 

@@ -1,6 +1,8 @@
 0.6.0 (unreleased)
     * Rename testcase_func_doc and testcase_func_name methods to doc_func and
       name_func (a DeprecationWarning will be issued, to be removed in 1.0).
+    * Include parameters in all docstrings, not just `parameterized.expand`
+      docstrings.
 
 0.5.0 (2015-06-09)
     * Support for nose2, py.test, unittest, and unittest2

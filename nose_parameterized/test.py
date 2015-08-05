@@ -262,3 +262,10 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
 ])
 def test_short_repr(input, expected, n=6):
     assert_equal(short_repr(input, n=n), expected)
+
+@parameterized([
+    ("foo", ),
+])
+def test_with_docstring(input):
+    """ Docstring! """
+    pass
