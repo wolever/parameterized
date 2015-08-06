@@ -122,7 +122,7 @@ class TestParamerizedOnTestCase(TestCase):
 
 
 class TestParameterizedExpandDocstring(TestCase):
-    def _assert_docstring(self, expected_docstring):
+    def _assert_docstring(self, expected_docstring, rstrip=False):
         """ Checks the current test method's docstring. Must be called directly
             from the test method. """
         stack = inspect.stack()
@@ -133,7 +133,10 @@ class TestParameterizedExpandDocstring(TestCase):
         )
         if test_method is None:
             raise AssertionError("uh oh, unittest changed a local variable name")
-        assert_equal(test_method.__doc__, expected_docstring)
+        actual_docstring = test_method.__doc__
+        if rstrip:
+            actual_docstring = actual_docstring.rstrip()
+        assert_equal(actual_docstring, expected_docstring)
 
     @parameterized.expand([param("foo")],
                           doc_func=lambda f, n, p: "stuff")
@@ -170,6 +173,13 @@ class TestParameterizedExpandDocstring(TestCase):
     def test_default_values_get_correct_value(self, foo, bar=12):
         """Documentation"""
         self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar))
+
+    @parameterized.expand([param("foo", )])
+    def test_with_leading_newline(self, foo, bar=12):
+        """
+        Documentation
+        """
+        self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar), rstrip=True)
 
 
 def test_warns_when_using_parameterized_with_TestCase():

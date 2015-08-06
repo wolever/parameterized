@@ -194,7 +194,7 @@ def default_doc_func(func, num, p):
     # The documentation might be a multiline string, so split it
     # and just work with the first string, ignoring the period
     # at the end if there is one.
-    first, nl, rest = func.__doc__.partition("\n")
+    first, nl, rest = func.__doc__.lstrip().partition("\n")
     suffix = ""
     if first.endswith("."):
         suffix = "."
