@@ -1,6 +1,9 @@
 Parameterized testing with any Python test framework
 ====================================================
 
+.. image:: https://travis-ci.org/wolever/nose-parameterized.svg?branch=master
+    :target: https://travis-ci.org/wolever/nose-parameterized
+
 Parameterized testing in Python sucks.
 
 ``nose-parameterized`` fixes that. For everything. Parameterized testing for
