@@ -321,11 +321,12 @@ class parameterized(object):
         return eval("[" + parents + "]", frame[0].f_globals, frame[0].f_locals)
 
     @classmethod
-    def input_as_callable(cls, input):
-        if callable(input):
-            return lambda: cls.check_input_values(input())
-        input_values = cls.check_input_values(input)
-        return lambda: input_values
+    def input_as_callable(cls, input_values):
+        """Return a lambda that returns a defensive copy of the parameters."""
+        if callable(input_values):
+            input_values = input_values()
+        checked_values = tuple(cls.check_input_values(input_values))
+        return lambda: checked_values
 
     @classmethod
     def check_input_values(cls, input_values):
