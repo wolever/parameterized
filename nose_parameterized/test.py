@@ -205,7 +205,7 @@ def test_helpful_error_on_non_iterable_input():
         for _ in parameterized(lambda: 42)(lambda: None)():
             pass
     except Exception as e:
-        assert_contains(str(e), "expected iterable input")
+        assert_contains(str(e), "is not iterable")
     else:
         raise AssertionError("Expected exception not raised")
 
