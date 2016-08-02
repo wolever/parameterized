@@ -329,8 +329,13 @@ class parameterized(object):
 
     @classmethod
     def check_input_values(cls, input_values):
-        if not hasattr(input_values, "__iter__"):
-            raise ValueError("expected iterable input; got %r" %(input, ))
+        # Explicitly convery non-list inputs to a list so that:
+        # 1. A helpful exception will be raised if they aren't iterable, and
+        # 2. Generators are unwrapped exactly once (otherwise `nosetests
+        #    --processes=n` has issues; see:
+        #    https://github.com/wolever/nose-parameterized/pull/31)
+        if not isinstance(input_values, list):
+            input_values = list(input_values)
         return input_values
 
     @classmethod
@@ -370,8 +375,8 @@ class parameterized(object):
             frame = stack[1]
             frame_locals = frame[0].f_locals
 
-            get_input = cls.input_as_callable(input)
-            for num, args in enumerate(get_input()):
+            paramters = cls.input_as_callable(input)()
+            for num, args in enumerate(paramters):
                 p = param.from_decorator(args)
                 name = name_func(f, num, p)
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)

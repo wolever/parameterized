@@ -14,7 +14,7 @@ except IOError:
 
 setup(
     name="nose-parameterized",
-    version="0.5.0",
+    version="0.6.dev",
     url="https://github.com/wolever/nose-parameterized",
     author="David Wolever",
     author_email="david@wolever.net",

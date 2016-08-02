@@ -3,6 +3,8 @@
       name_func (a DeprecationWarning will be issued, to be removed in 1.0).
     * Include parameters in all docstrings, not just `parameterized.expand`
       docstrings.
+    * Explicitly unwrap iterators and generators before the test run (thanks
+      @chornsby; https://github.com/wolever/nose-parameterized/pull/31)
 
 0.5.0 (2015-06-09)
     * Support for nose2, py.test, unittest, and unittest2

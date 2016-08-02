@@ -190,9 +190,10 @@ iterable:
 
 .. **
 
-Note that, when using an iterator or a generator, Nose will read every item
-into memory before running any tests (as it first finds and loads every test in
-each test file, then executes all of them at once).
+Note that, when using an iterator or a generator, all the items will be loaded
+into memory before the start of the test run (we do this explicitly to ensure
+that generators are exhausted exactly once in multi-process or multi-threaded
+testing environments).
 
 The ``@parameterized`` decorator can be used test class methods, and standalone
 functions:
