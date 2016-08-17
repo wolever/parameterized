@@ -16,6 +16,7 @@ setup(
     name="nose-parameterized",
     version="0.6.dev",
     url="https://github.com/wolever/nose-parameterized",
+    license="FreeBSD",
     author="David Wolever",
     author_email="david@wolever.net",
     description="Parameterized testing with any Python test framework",
