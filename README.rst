@@ -87,6 +87,14 @@ With unittest (and unittest2)::
 (note: because unittest does not support test decorators, only tests created
 with ``@parameterized.expand`` will be executed)
 
+Installation
+------------
+
+::
+
+    $ pip install nose-parameterized
+
+
 Compatibility
 -------------
 
