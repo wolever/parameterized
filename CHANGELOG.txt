@@ -1,4 +1,4 @@
-0.6.0 (2017-03-21)
+0.6.1 (2017-03-21)
     * Rename package from nose-parameterized to parameterized. A
       nose-parameterized package will be released with a deprecation warning.
     * Rename testcase_func_doc and testcase_func_name methods to doc_func and
@@ -7,6 +7,8 @@
       docstrings.
     * Explicitly unwrap iterators and generators before the test run (thanks
       @chornsby; https://github.com/wolever/nose-parameterized/pull/31)
+    * 0.6.1 instead of 0.6.0 because I'm a dumb and accidentally uploaded
+      the wrong thing to PyPI under version 0.6.0.
 
 0.5.0 (2015-06-09)
     * Support for nose2, py.test, unittest, and unittest2
