@@ -10,12 +10,12 @@ os.chdir(os.path.dirname(sys.argv[0]) or ".")
 try:
     long_description = open("README.rst", "U").read()
 except IOError:
-    long_description = "See https://github.com/wolever/nose-parameterized"
+    long_description = "See https://github.com/wolever/parameterized"
 
 setup(
-    name="nose-parameterized",
-    version="0.6.dev",
-    url="https://github.com/wolever/nose-parameterized",
+    name="parameterized",
+    version="0.6.0",
+    url="https://github.com/wolever/parameterized",
     license="FreeBSD",
     author="David Wolever",
     author_email="david@wolever.net",

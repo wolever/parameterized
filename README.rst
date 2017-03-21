@@ -1,19 +1,19 @@
 Parameterized testing with any Python test framework
 ====================================================
 
-.. image:: https://travis-ci.org/wolever/nose-parameterized.svg?branch=master
-    :target: https://travis-ci.org/wolever/nose-parameterized
+.. image:: https://travis-ci.org/wolever/parameterized.svg?branch=master
+    :target: https://travis-ci.org/wolever/parameterized
 
 Parameterized testing in Python sucks.
 
-``nose-parameterized`` fixes that. For everything. Parameterized testing for
-nose, parameterized testing for py.test, parameterized testing for unittest.
+``parameterized`` fixes that. For everything. Parameterized testing for nose,
+parameterized testing for py.test, parameterized testing for unittest.
 
 .. code:: python
 
     # test_math.py
     from nose.tools import assert_equal
-    from nose_parameterized import parameterized
+    from parameterized import parameterized
 
     import unittest
     import math
@@ -92,7 +92,7 @@ Installation
 
 ::
 
-    $ pip install nose-parameterized
+    $ pip install parameterized
 
 
 Compatibility
@@ -100,7 +100,7 @@ Compatibility
 
 `Yes`__.
 
-__ https://travis-ci.org/wolever/nose-parameterized
+__ https://travis-ci.org/wolever/parameterized
 
 .. list-table::
    :header-rows: 1
@@ -160,7 +160,7 @@ iterable:
 
 .. code:: python
 
-    from nose_parameterized import parameterized, param
+    from parameterized import parameterized, param
 
     # A list of tuples
     @parameterized([
@@ -208,7 +208,7 @@ functions:
 
 .. code:: python
 
-    from nose_parameterized import parameterized
+    from parameterized import parameterized
 
     class AddTest(object):
         @parameterized([
@@ -231,7 +231,7 @@ class is a subclass of ``unittest.TestCase``):
 .. code:: python
 
     import unittest
-    from nose_parameterized import parameterized
+    from parameterized import parameterized
 
     class AddTestCase(unittest.TestCase):
         @parameterized.expand([
@@ -268,7 +268,7 @@ index of the test case parameters in the list of parameters, and ``param``
 .. code:: python
 
     import unittest
-    from nose_parameterized import parameterized
+    from parameterized import parameterized
 
     def custom_name_func(testcase_func, param_num, param):
         return "%s_%s" %(
@@ -301,7 +301,7 @@ case.  It can be used to pass keyword arguments to test cases:
 
 .. code:: python
 
-    from nose_parameterized import parameterized, param
+    from parameterized import parameterized, param
 
     @parameterized([
         param("10", 10),
@@ -317,7 +317,7 @@ with the ``doc_func`` argument:
 
 .. code:: python
 
-    from nose_parameterized import parameterized
+    from parameterized import parameterized
 
     @parameterized([
         (1, 2, 3),
@@ -351,11 +351,27 @@ with the ``doc_func`` argument:
     OK
 
 
+Migrating from ``nose-parameterized`` to ``parameterized``
+----------------------------------------------------------
+
+To migrate a codebase from ``nose-parameterized`` to ``parameterized``:
+
+1. Update your requirements file, replacing ``nose-parameterized`` with
+   ``parameterized``.
+
+2. Replace all references to ``nose_parameterized`` with ``parameterized``::
+
+    $ perl -pi -e 's/nose_parameterized/parameterized/g' your-codebase/
+
+3. You're done!
+
+
 FAQ
 ---
 
-If all the major testing frameworks are supported, why is it called ``nose-parameterized``?
-    Originally only nose was supported. But now everything is supported!
+What happened to ``nose-parameterized``?
+    Originally only nose was supported. But now everything is supported, and it
+    only made sense to change the name!
 
 What do you mean when you say "nose is best supported"?
     There are small caveates with ``py.test`` and ``unittest``: ``py.test``
@@ -363,8 +379,12 @@ What do you mean when you say "nose is best supported"?
     instead of ``test_add[1, 2, 3]``), and ``unittest``/``unittest2`` do not
     support test generators so ``@parameterized.expand`` must be used.
 
-
 Why not use ``@pytest.mark.parametrize``?
-    Because spelling is difficult. Also, ``nose-parameterized`` doesn't
-    require you to repeat argument names, and (using ``param``) it supports
-    optional keyword arguments.
+    Because spelling is difficult. Also, ``parameterized`` doesn't require you
+    to repeat argument names, and (using ``param``) it supports optional
+    keyword arguments.
+
+Why do I get an ``AttributeError: 'function' object has no attribute 'expand'`` with ``@parameterized.expand``?
+    You've likely installed the ``parametrized`` (note the missing *e*)
+    package. Use ``parameterized`` (with the *e*) instead and you'll be all
+    set.
