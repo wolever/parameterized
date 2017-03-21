@@ -12,14 +12,21 @@ try:
 except IOError:
     long_description = "See https://github.com/wolever/parameterized"
 
+import warnings
+warnings.warn(
+    "The 'nose-parameterized' package has been renamed 'parameterized'. "
+    "For the two step migration instructions, see: "
+    "https://github.com/wolever/parameterized#migrating-from-nose-parameterized-to-parameterized "
+)
+
 setup(
-    name="parameterized",
+    name="nose-parameterized",
     version="0.6.0",
     url="https://github.com/wolever/parameterized",
     license="FreeBSD",
     author="David Wolever",
     author_email="david@wolever.net",
-    description="Parameterized testing with any Python test framework",
+    description="Parameterized testing with any Python test framework (DEPRECATED; See the 'parameterized' package)",
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
