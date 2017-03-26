@@ -37,20 +37,6 @@ def expect(skip, tests=None):
         return
     missing_tests.update(tests)
 
-def pytest_skip(reason):
-    try:
-        import pytest
-    except ImportError:
-        pytest = None
-
-    def pytest_skip_helper(f):
-        if not pytest:
-            return f
-        return pytest.mark.skip(reason=reason)(f)
-
-    return pytest_skip_helper
-
-
 test_params = [
     (42, ),
     "foo0",
