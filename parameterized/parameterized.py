@@ -3,6 +3,7 @@ import sys
 import inspect
 import warnings
 from functools import wraps
+from types import MethodType as MethodType
 from collections import namedtuple
 
 try:
@@ -17,9 +18,6 @@ PY2 = sys.version_info[0] == 2
 
 
 if PY3:
-    def new_instancemethod(f, *args):
-        return f
-
     # Python 3 doesn't have an InstanceType, so just use a dummy type.
     class InstanceType():
         pass
@@ -27,14 +25,18 @@ if PY3:
     text_type = str
     string_types = str,
     bytes_type = bytes
+    def make_method(func, instance, type):
+        if instance is None:
+            return func
+        return MethodType(func, instance)
 else:
-    import new
-    new_instancemethod = new.instancemethod
     from types import InstanceType
     lzip = zip
     text_type = unicode
     bytes_type = str
     string_types = basestring,
+    def make_method(func, instance, type):
+        return MethodType(func, instance, type)
 
 _param = namedtuple("param", "args kwargs")
 
@@ -89,9 +91,17 @@ class param(_param):
             """
         if isinstance(args, param):
             return args
-        if isinstance(args, string_types):
+        elif isinstance(args, string_types):
             args = (args, )
-        return cls(*args)
+        try:
+            return cls(*args)
+        except TypeError as e:
+            if "after * must be" not in str(e):
+                raise
+            raise TypeError(
+                "Parameters must be tuples, but %r is not (hint: use '(%r, )')"
+                %(args, args),
+            )
 
     def __repr__(self):
         return "param(*%r, **%r)" %self
@@ -209,6 +219,48 @@ def default_name_func(func, num, p):
         name_suffix += "_" + parameterized.to_safe_name(p.args[0])
     return base_name + name_suffix
 
+
+_test_runner_override = None
+_test_runner_guess = False
+_test_runners = set(["unittest", "unittest2", "nose", "nose2", "pytest"])
+_test_runner_aliases = {
+    "_pytest": "pytest",
+}
+
+def set_test_runner(name):
+    global _test_runner_override
+    if name not in _test_runners:
+        raise TypeError(
+            "Invalid test runner: %r (must be one of: %s)"
+            %(name, ", ".join(_test_runners)),
+        )
+    _test_runner_override = name
+
+def detect_runner():
+    """ Guess which test runner we're using by traversing the stack and looking
+        for the first matching module. This *should* be reasonably safe, as
+        it's done during test disocvery where the test runner should be the
+        stack frame immediately outside. """
+    if _test_runner_override is not None:
+        return _test_runner_override
+    global _test_runner_guess
+    if _test_runner_guess is False:
+        stack = inspect.stack()
+        for record in reversed(stack):
+            frame = record[0]
+            module = frame.f_globals.get("__name__").partition(".")[0]
+            if module in _test_runner_aliases:
+                module = _test_runner_aliases[module]
+            if module in _test_runners:
+                _test_runner_guess = module
+                break
+            if record[1].endswith("python2.6/unittest.py"):
+                _test_runner_guess = "unittest"
+                break
+        else:
+            _test_runner_guess = None
+    return _test_runner_guess
+
 class parameterized(object):
     """ Parameterize a test case::
 
@@ -239,69 +291,65 @@ class parameterized(object):
 
         @wraps(test_func)
         def wrapper(test_self=None):
-            f = test_func
+            test_cls = test_self and type(test_self)
             if test_self is not None:
-                # If we are a test method (which we suppose to be true if we
-                # are being passed a "self" argument), we first need to create
-                # an instance method, attach it to the instance of the test
-                # class, then pull it back off to turn it into a bound method.
-                # If we don't do this, Nose gets cranky.
-                f = self.make_bound_method(test_self, test_func)
-            # Note: because nose is so very picky, the more obvious
-            # ``return self.yield_nose_tuples(f)`` won't work here.
-            for nose_tuple in self.yield_nose_tuples(f, wrapper):
-                yield nose_tuple
+                if issubclass(test_cls, InstanceType):
+                    raise TypeError((
+                        "@parameterized can't be used with old-style classes, but "
+                        "%r has an old-style class. Consider using a new-style "
+                        "class, or '@parameterized.expand' "
+                        "(see http://stackoverflow.com/q/54867/71522 for more "
+                        "information on old-style classes)."
+                    ) %(test_self, ))
 
-        test_func.__name__ = "_helper_for_%s" %(test_func.__name__, )
+            original_doc = wrapper.__doc__
+            for num, args in enumerate(wrapper.parameterized_input):
+                p = param.from_decorator(args)
+                unbound_func, nose_tuple = self.param_as_nose_tuple(test_self, test_func, num, p)
+                try:
+                    wrapper.__doc__ = nose_tuple[0].__doc__
+                    # Nose uses `getattr(instance, test_func.__name__)` to get
+                    # a method bound to the test instance (as opposed to a
+                    # method bound to the instance of the class created when
+                    # tests were being enumerated). Set a value here to make
+                    # sure nose can get the correct test method.
+                    if test_self is not None:
+                        setattr(test_cls, test_func.__name__, unbound_func)
+                    yield nose_tuple
+                finally:
+                    if test_self is not None:
+                        delattr(test_cls, test_func.__name__)
+                    wrapper.__doc__ = original_doc
         wrapper.parameterized_input = self.get_input()
         wrapper.parameterized_func = test_func
+        test_func.__name__ = "_parameterized_original_%s" %(test_func.__name__, )
         return wrapper
 
-    def yield_nose_tuples(self, func, wrapper):
-        original_doc = wrapper.__doc__
-        for num, args in enumerate(wrapper.parameterized_input):
-            p = param.from_decorator(args)
-            # ... then yield that as a tuple. If those steps aren't
-            # followed precicely, Nose gets upset and doesn't run the test
-            # or doesn't run setup methods.
-            nose_tuple = self.param_as_nose_tuple(func, num, p)
-            nose_func = nose_tuple[0]
-            try:
-                wrapper.__doc__ = nose_func.__doc__
-                yield nose_tuple
-            finally:
-                wrapper.__doc__ = original_doc
-
-    def param_as_nose_tuple(self, func, num, p):
-        if p.kwargs:
-            nose_func = wraps(func)(lambda args, kwargs: func(*args, **kwargs))
-            nose_args = (p.args, p.kwargs)
-        else:
-            nose_func = wraps(func)(lambda *args: func(*args))
-            nose_args = p.args
+    def param_as_nose_tuple(self, test_self, func, num, p):
+        nose_func = wraps(func)(lambda *args: func(*args[:-1], **args[-1]))
         nose_func.__doc__ = self.doc_func(func, num, p)
-        return (nose_func, ) + nose_args
-
-    def make_bound_method(self, instance, func):
-        cls = type(instance)
-        if issubclass(cls, InstanceType):
-            raise TypeError((
-                "@parameterized can't be used with old-style classes, but "
-                "%r has an old-style class. Consider using a new-style "
-                "class, or '@parameterized.expand' "
-                "(see http://stackoverflow.com/q/54867/71522 for more "
-                "information on old-style classes)."
-            ) %(instance, ))
-        im_f = new_instancemethod(func, None, cls)
-        setattr(cls, func.__name__, im_f)
-        return getattr(instance, func.__name__)
+        # Track the unbound function because we need to setattr the unbound
+        # function onto the class for nose to work (see comments above), and
+        # Python 3 doesn't let us pull the function out of a bound method.
+        unbound_func = nose_func
+        if test_self is not None:
+            # Under nose on Py2 we need to return an unbound method to make
+            # sure that the `self` in the method is properly shared with the
+            # `self` used in `setUp` and `tearDown`. But only there. Everyone
+            # else needs a bound method.
+            func_self = (
+                None if PY2 and detect_runner() == "nose" else
+                test_self
+            )
+            nose_func = make_method(nose_func, func_self, type(test_self))
+        return unbound_func, (nose_func, ) + p.args + (p.kwargs or {}, )
 
     def assert_not_in_testcase_subclass(self):
         parent_classes = self._terrible_magic_get_defining_classes()
         if any(issubclass(cls, TestCase) for cls in parent_classes):
             raise Exception("Warning: '@parameterized' tests won't work "
                             "inside subclasses of 'TestCase' - use "
-                            "'@parameterized.expand' instead")
+                            "'@parameterized.expand' instead.")
 
     def _terrible_magic_get_defining_classes(self):
         """ Returns the set of parent classes of the class currently being defined.
@@ -336,7 +384,7 @@ class parameterized(object):
         #    https://github.com/wolever/nose-parameterized/pull/31)
         if not isinstance(input_values, list):
             input_values = list(input_values)
-        return input_values
+        return [ param.from_decorator(p) for p in input_values ]
 
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, **legacy):
@@ -376,8 +424,7 @@ class parameterized(object):
             frame_locals = frame[0].f_locals
 
             paramters = cls.input_as_callable(input)()
-            for num, args in enumerate(paramters):
-                p = param.from_decorator(args)
+            for num, p in enumerate(paramters):
                 name = name_func(f, num, p)
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)

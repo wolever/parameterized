@@ -7,31 +7,24 @@ from nose.plugins.skip import SkipTest
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
-    short_repr,
+    short_repr, detect_runner,
 )
 
 def assert_contains(haystack, needle):
     if needle not in haystack:
         raise AssertionError("%r not in %r" %(needle, haystack))
 
-def detect_runner(candidates):
-    for x in reversed(inspect.stack()):
-        frame = x[0]
-        for mod in candidates:
-            frame_mod = frame.f_globals.get("__name__", "")
-            if frame_mod == mod or frame_mod.startswith(mod + "."):
-                return mod
-    return "<unknown>"
-
-runner = detect_runner(["nose", "nose2","unittest", "unittest2"])
+runner = detect_runner()
 UNITTEST = runner.startswith("unittest")
 NOSE2 = (runner == "nose2")
+PYTEST = (runner == "pytest")
 
 SKIP_FLAGS = {
     "generator": UNITTEST,
     # nose2 doesn't run tests on old-style classes under Py2, so don't expect
     # these tests to run under nose2.
     "py2nose2": (PY2 and NOSE2),
+    "pytest": PYTEST,
 }
 
 missing_tests = set()
@@ -44,10 +37,19 @@ def expect(skip, tests=None):
         return
     missing_tests.update(tests)
 
+def pytest_skip(reason):
+    try:
+        import pytest
+    except ImportError:
+        pytest = None
 
-if not (PY2 and NOSE2):
-    missing_tests.update([
-    ])
+    def pytest_skip_helper(f):
+        if not pytest:
+            return f
+        return pytest.mark.skip(reason=reason)(f)
+
+    return pytest_skip_helper
+
 
 test_params = [
     (42, ),
@@ -79,6 +81,31 @@ class TestParameterized(object):
     @parameterized(test_params)
     def test_instance_method(self, foo, bar=None):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
+
+
+if not PYTEST:
+    # py.test doesn't use xunit-style setup/teardown, so these tests don't apply
+    class TestSetupTeardown(object):
+        expect("generator", [
+            "test_setup(setup 1)",
+            "teardown_called(teardown 1)",
+            "test_setup(setup 2)",
+            "teardown_called(teardown 2)",
+        ])
+
+        stack = ["setup 1", "teardown 1", "setup 2", "teardown 2"]
+        actual_order = "error: setup not called"
+
+        def setUp(self):
+            self.actual_order = self.stack.pop(0)
+
+        def tearDown(self):
+            missing_tests.remove("teardown_called(%s)" %(self.stack.pop(0), ))
+
+        @parameterized([(1, ), (2, )])
+        def test_setup(self, count, *a):
+            assert_equal(self.actual_order, "setup %s" %(count, ))
+            missing_tests.remove("test_setup(%s)" %(self.actual_order, ))
 
 
 def custom_naming_func(custom_tag):
@@ -185,11 +212,19 @@ class TestParameterizedExpandDocstring(TestCase):
 def test_warns_when_using_parameterized_with_TestCase():
     try:
         class TestTestCaseWarnsOnBadUseOfParameterized(TestCase):
-            @parameterized([42])
+            @parameterized([(42, )])
             def test_in_subclass_of_TestCase(self, foo):
                 pass
     except Exception as e:
         assert_contains(str(e), "parameterized.expand")
+    else:
+        raise AssertionError("Expected exception not raised")
+
+def test_helpful_error_on_invalid_parameters():
+    try:
+        parameterized([1432141234243])(lambda: None)
+    except Exception as e:
+        assert_contains(str(e), "Parameters must be tuples")
     else:
         raise AssertionError("Expected exception not raised")
 
@@ -202,8 +237,7 @@ def test_wrapped_iterable_input(foo):
 
 def test_helpful_error_on_non_iterable_input():
     try:
-        for _ in parameterized(lambda: 42)(lambda: None)():
-            pass
+        parameterized(lambda: 42)(lambda: None)
     except Exception as e:
         assert_contains(str(e), "is not iterable")
     else:
@@ -268,7 +302,8 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
 @parameterized([
     ("abcd", "'abcd'"),
     ("123456789", "'12...89'"),
-    (123456789, "123...789")  # number types do not have quotes, so we can repr more
+    (123456789, "123...789"),
+    (123456789, "12...89", 4),
 ])
 def test_short_repr(input, expected, n=6):
     assert_equal(short_repr(input, n=n), expected)
