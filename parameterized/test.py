@@ -214,6 +214,16 @@ def test_helpful_error_on_invalid_parameters():
     else:
         raise AssertionError("Expected exception not raised")
 
+
+def test_helpful_error_on_empty_iterable_input():
+    try:
+        parameterized([])(lambda: None)
+    except ValueError as e:
+        assert_contains(str(e), "Parameters iterable was empty")
+    else:
+        raise AssertionError("Expected exception not raised")
+
+
 expect("generator", [
     "test_wrapped_iterable_input('foo')",
 ])

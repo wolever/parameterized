@@ -320,9 +320,15 @@ class parameterized(object):
                     if test_self is not None:
                         delattr(test_cls, test_func.__name__)
                     wrapper.__doc__ = original_doc
+
         wrapper.parameterized_input = self.get_input()
+
+        if not wrapper.parameterized_input:
+            raise ValueError('Parameters iterable was empty')
+
         wrapper.parameterized_func = test_func
         test_func.__name__ = "_parameterized_original_%s" %(test_func.__name__, )
+
         return wrapper
 
     def param_as_nose_tuple(self, test_self, func, num, p):
