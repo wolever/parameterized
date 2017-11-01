@@ -224,6 +224,17 @@ def test_helpful_error_on_empty_iterable_input():
         raise AssertionError("Expected exception not raised")
 
 
+try:
+    class ExpectErrorOnEmptyInput(TestCase):
+        @parameterized.expand([])
+        def test_expect_error(self):
+            pass
+except ValueError as e:
+    assert_contains(str(e), "input was empty")
+else:
+    raise AssertionError("Expected exception not raised")
+
+
 expect("generator", [
     "test_wrapped_iterable_input('foo')",
 ])

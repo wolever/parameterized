@@ -430,6 +430,10 @@ class parameterized(object):
             frame_locals = frame[0].f_locals
 
             paramters = cls.input_as_callable(input)()
+
+            if not paramters:
+                raise ValueError('input was empty')
+
             for num, p in enumerate(paramters):
                 name = name_func(f, num, p)
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
