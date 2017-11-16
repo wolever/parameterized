@@ -389,6 +389,14 @@ class parameterized(object):
 
     @classmethod
     def parameterized_class(cls, properties, test_values):
+        """
+        A method for parameterizing test classes.
+        This sets the defined tuples in properties as attributes in the class
+        and sets its corresponding values defined in test_values
+        :param properties: tuple of strings or string value
+        :param test_values: array of tuples
+        
+        """
         def decorator(base_class):
             test_class_module = sys.modules[base_class.__module__].__dict__
             for test_value_key, test_field in enumerate(test_values):
