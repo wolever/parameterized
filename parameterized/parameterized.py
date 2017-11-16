@@ -386,6 +386,29 @@ class parameterized(object):
             input_values = list(input_values)
         return [ param.from_decorator(p) for p in input_values ]
 
+
+    @classmethod
+    def parameterized_class(cls, properties, test_values):
+        def decorator(base_class):
+            test_class_module = sys.modules[base_class.__module__].__dict__
+            for test_value_key, test_field in enumerate(test_values):
+                test_class_dict = dict(base_class.__dict__)
+
+                if isinstance(properties, string_types):
+                    test_class_dict[properties] = test_field
+                    _create_module(base_class, test_class_module, test_value_key, test_class_dict)
+                elif len(properties) == len(test_field):
+                    for j, property_key in enumerate(properties):
+                        test_class_dict[property_key] = test_field[j]
+                    _create_module(base_class, test_class_module, test_value_key, test_class_dict)
+
+        def _create_module(base_class, test_class_module, test_value_key, test_class_dict):
+            name = '{method_name}_{index}'.format(method_name=base_class.__name__, index=test_value_key + 1)
+            test_class_module[name] = type(name, (base_class,), test_class_dict)
+
+        return decorator
+
+
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
