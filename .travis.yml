@@ -1,25 +1,46 @@
 language: python
 sudo: false
-env:
-  - TOXENV=py27-nose
-  - TOXENV=py27-nose2
-  - TOXENV=py27-pytest
-  - TOXENV=py27-unit
-  - TOXENV=py27-unit2
-  - TOXENV=py35-nose
-  - TOXENV=py35-nose2
-  - TOXENV=py35-pytest
-  - TOXENV=py35-unit
-  - TOXENV=py35-unit2
-  - TOXENV=py36-nose
-  - TOXENV=py36-nose2
-  - TOXENV=py36-pytest
-  - TOXENV=py36-unit
-  - TOXENV=py36-unit2
-  - TOXENV=pypy-nose
-  - TOXENV=pypy-nose2
-  - TOXENV=pypy-pytest
-  - TOXENV=pypy-unit
-  - TOXENV=pypy-unit2
+matrix:
+  include:
+    - env: "TOXENV=py27-nose"
+      python: "2.7"
+    - env: "TOXENV=py27-nose2"
+      python: "2.7"
+    - env: "TOXENV=py27-pytest"
+      python: "2.7"
+    - env: "TOXENV=py27-unit"
+      python: "2.7"
+    - env: "TOXENV=py27-unit2"
+      python: "2.7"
+    - env: "TOXENV=py35-nose"
+      python: "3.5"
+    - env: "TOXENV=py35-nose2"
+      python: "3.5"
+    - env: "TOXENV=py35-pytest"
+      python: "3.5"
+    - env: "TOXENV=py35-unit"
+      python: "3.5"
+    - env: "TOXENV=py35-unit2"
+      python: "3.5"
+    - env: "TOXENV=py36-nose"
+      python: "3.6"
+    - env: "TOXENV=py36-nose2"
+      python: "3.6"
+    - env: "TOXENV=py36-pytest"
+      python: "3.6"
+    - env: "TOXENV=py36-unit"
+      python: "3.6"
+    - env: "TOXENV=py36-unit2"
+      python: "3.6"
+    - env: "TOXENV=pypy-nose"
+      python: "pypy"
+    - env: "TOXENV=pypy-nose2"
+      python: "pypy"
+    - env: "TOXENV=pypy-pytest"
+      python: "pypy"
+    - env: "TOXENV=pypy-unit"
+      python: "pypy"
+    - env: "TOXENV=pypy-unit2"
+      python: "pypy"
 install: pip install tox
 script: tox
