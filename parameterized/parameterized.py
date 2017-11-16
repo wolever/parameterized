@@ -388,31 +388,30 @@ class parameterized(object):
 
 
     @classmethod
-    def parameterized_class(cls, properties, test_values):
+    def parameterized_class(cls, attribute_names, input_values):
         """
         A method for parameterizing test classes.
         This sets the defined tuples in properties as attributes in the class
-        and sets its corresponding values defined in test_values
-        :param properties: tuple of strings or string value
-        :param test_values: array of tuples
-        
+        and sets its corresponding values defined in input_values
+        :param attribute_names: tuple of strings or string value
+        :param input_values: array of tuples
+
         """
         def decorator(base_class):
             test_class_module = sys.modules[base_class.__module__].__dict__
-            for test_value_key, test_field in enumerate(test_values):
+            for test_value_key, test_field in enumerate(input_values):
                 test_class_dict = dict(base_class.__dict__)
 
-                if isinstance(properties, string_types):
-                    test_class_dict[properties] = test_field
-                    _create_module(base_class, test_class_module, test_value_key, test_class_dict)
-                elif len(properties) == len(test_field):
-                    for j, property_key in enumerate(properties):
+                if isinstance(attribute_names, string_types):
+                    test_class_dict[attribute_names] = test_field
+                elif len(attribute_names) == len(test_field):
+                    for j, property_key in enumerate(attribute_names):
                         test_class_dict[property_key] = test_field[j]
-                    _create_module(base_class, test_class_module, test_value_key, test_class_dict)
+                _create_module(base_class, test_class_module, test_value_key, test_class_dict)
 
-        def _create_module(base_class, test_class_module, test_value_key, test_class_dict):
-            name = '{method_name}_{index}'.format(method_name=base_class.__name__, index=test_value_key + 1)
-            test_class_module[name] = type(name, (base_class,), test_class_dict)
+        def _create_module(b, test_class_module, test_value_key, test_class_dict):
+            name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
+            test_class_module[name] = type(name, (b,), test_class_dict)
 
         return decorator
 
