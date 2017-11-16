@@ -10,11 +10,9 @@ from .parameterized import (
     short_repr, detect_runner,
 )
 
-
 def assert_contains(haystack, needle):
     if needle not in haystack:
-        raise AssertionError("%r not in %r" % (needle, haystack))
-
+        raise AssertionError("%r not in %r" %(needle, haystack))
 
 runner = detect_runner()
 UNITTEST = runner.startswith("unittest")
@@ -31,7 +29,6 @@ SKIP_FLAGS = {
 
 missing_tests = set()
 
-
 def expect(skip, tests=None):
     if tests is None:
         tests = skip
@@ -40,9 +37,8 @@ def expect(skip, tests=None):
         return
     missing_tests.update(tests)
 
-
 test_params = [
-    (42,),
+    (42, ),
     "foo0",
     param("foo1"),
     param("foo2", bar=42),
@@ -55,10 +51,9 @@ expect("generator", [
     "test_naked_function(42, bar=None)",
 ])
 
-
 @parameterized(test_params)
 def test_naked_function(foo, bar=None):
-    missing_tests.remove("test_naked_function(%r, bar=%r)" % (foo, bar))
+    missing_tests.remove("test_naked_function(%r, bar=%r)" %(foo, bar))
 
 
 class TestParameterized(object):
@@ -71,11 +66,11 @@ class TestParameterized(object):
 
     @parameterized(test_params)
     def test_instance_method(self, foo, bar=None):
-        missing_tests.remove("test_instance_method(%r, bar=%r)" % (foo, bar))
+        missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
 
 
 if not PYTEST:
-    # py.test doesn't use xunit-style setup/teardown, so these tests don't apply
+    # py.test doesn't use xunit-style setup/teardown`, so these tests don't apply
     class TestSetupTeardown(object):
         expect("generator", [
             "test_setup(setup 1)",
@@ -91,12 +86,12 @@ if not PYTEST:
             self.actual_order = self.stack.pop(0)
 
         def tearDown(self):
-            missing_tests.remove("teardown_called(%s)" % (self.stack.pop(0),))
+            missing_tests.remove("teardown_called(%s)" %(self.stack.pop(0), ))
 
-        @parameterized([(1,), (2,)])
+        @parameterized([(1, ), (2, )])
         def test_setup(self, count, *a):
-            assert_equal(self.actual_order, "setup %s" % (count,))
-            missing_tests.remove("test_setup(%s)" % (self.actual_order,))
+            assert_equal(self.actual_order, "setup %s" %(count, ))
+            missing_tests.remove("test_setup(%s)" %(self.actual_order, ))
 
 
 def custom_naming_func(custom_tag):
@@ -116,7 +111,7 @@ class TestParamerizedOnTestCase(TestCase):
 
     @parameterized.expand(test_params)
     def test_on_TestCase(self, foo, bar=None):
-        missing_tests.remove("test_on_TestCase(%r, bar=%r)" % (foo, bar))
+        missing_tests.remove("test_on_TestCase(%r, bar=%r)" %(foo, bar))
 
     expect([
         "test_on_TestCase2_custom_name_42(42, bar=None)",
@@ -136,7 +131,7 @@ class TestParamerizedOnTestCase(TestCase):
         assert_equal(nose_test_method_name, expected_name,
                      "Test Method name '%s' did not get customized to expected: '%s'" %
                      (nose_test_method_name, expected_name))
-        missing_tests.remove("%s(%r, bar=%r)" % (expected_name, foo, bar))
+        missing_tests.remove("%s(%r, bar=%r)" %(expected_name, foo, bar))
 
 
 class TestParameterizedExpandDocstring(TestCase):
@@ -146,8 +141,8 @@ class TestParameterizedExpandDocstring(TestCase):
         stack = inspect.stack()
         f_locals = stack[3][0].f_locals
         test_method = (
-            f_locals.get("testMethod") or  # Py27
-            f_locals.get("function")  # Py33
+            f_locals.get("testMethod") or # Py27
+            f_locals.get("function") # Py33
         )
         if test_method is None:
             raise AssertionError("uh oh, unittest changed a local variable name")
@@ -165,12 +160,12 @@ class TestParameterizedExpandDocstring(TestCase):
     @parameterized.expand([param("foo")])
     def test_single_line_docstring(self, foo):
         """Documentation."""
-        self._assert_docstring("Documentation [with foo=%r]." % (foo,))
+        self._assert_docstring("Documentation [with foo=%r]." %(foo, ))
 
     @parameterized.expand([param("foo")])
     def test_empty_docstring(self, foo):
         ""
-        self._assert_docstring("[with foo=%r]" % (foo,))
+        self._assert_docstring("[with foo=%r]" %(foo, ))
 
     @parameterized.expand([param("foo")])
     def test_multiline_documentation(self, foo):
@@ -179,38 +174,37 @@ class TestParameterizedExpandDocstring(TestCase):
         More"""
         self._assert_docstring(
             "Documentation [with foo=%r].\n\n"
-            "        More" % (foo,)
+            "        More" %(foo, )
         )
 
     @parameterized.expand([param("foo")])
     def test_unicode_docstring(self, foo):
         u"""Döcumentation."""
-        self._assert_docstring(u"Döcumentation [with foo=%r]." % (foo,))
+        self._assert_docstring(u"Döcumentation [with foo=%r]." %(foo, ))
 
     @parameterized.expand([param("foo", )])
     def test_default_values_get_correct_value(self, foo, bar=12):
         """Documentation"""
-        self._assert_docstring("Documentation [with foo=%r, bar=%r]" % (foo, bar))
+        self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar))
 
     @parameterized.expand([param("foo", )])
     def test_with_leading_newline(self, foo, bar=12):
         """
         Documentation
         """
-        self._assert_docstring("Documentation [with foo=%r, bar=%r]" % (foo, bar), rstrip=True)
+        self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar), rstrip=True)
 
 
 def test_warns_when_using_parameterized_with_TestCase():
     try:
         class TestTestCaseWarnsOnBadUseOfParameterized(TestCase):
-            @parameterized([(42,)])
+            @parameterized([(42, )])
             def test_in_subclass_of_TestCase(self, foo):
                 pass
     except Exception as e:
         assert_contains(str(e), "parameterized.expand")
     else:
         raise AssertionError("Expected exception not raised")
-
 
 def test_helpful_error_on_invalid_parameters():
     try:
@@ -220,16 +214,12 @@ def test_helpful_error_on_invalid_parameters():
     else:
         raise AssertionError("Expected exception not raised")
 
-
 expect("generator", [
     "test_wrapped_iterable_input('foo')",
 ])
-
-
 @parameterized(lambda: iter(["foo"]))
 def test_wrapped_iterable_input(foo):
-    missing_tests.remove("test_wrapped_iterable_input(%r)" % (foo,))
-
+    missing_tests.remove("test_wrapped_iterable_input(%r)" %(foo, ))
 
 def test_helpful_error_on_non_iterable_input():
     try:
@@ -244,16 +234,13 @@ def tearDownModule():
     missing = sorted(list(missing_tests))
     assert_equal(missing, [])
 
-
 def test_old_style_classes():
     if PY3:
         raise SkipTest("Py3 doesn't have old-style classes")
-
     class OldStyleClass:
         @parameterized(["foo"])
         def parameterized_method(self, param):
             pass
-
     try:
         list(OldStyleClass().parameterized_method())
     except TypeError as e:
@@ -272,28 +259,28 @@ class TestOldStyleClass:
 
     @parameterized.expand(["foo", "bar"])
     def test_old_style_classes(self, param):
-        missing_tests.remove("test_on_old_style_class(%r)" % (param,))
+        missing_tests.remove("test_on_old_style_class(%r)" %(param, ))
 
 
 @parameterized([
     ("", param(), []),
     ("*a, **kw", param(), []),
-    ("*a, **kw", param(1, foo=42), [("*a", (1,)), ("**kw", {"foo": 42})]),
+    ("*a, **kw", param(1, foo=42), [("*a", (1, )), ("**kw", {"foo": 42})]),
     ("foo", param(1), [("foo", 1)]),
     ("foo, *a", param(1), [("foo", 1)]),
-    ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9,))]),
+    ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9, ))]),
     ("foo, *a, **kw", param(1, bar=9), [("foo", 1), ("**kw", {"bar": 9})]),
     ("x=9", param(), [("x", 9)]),
     ("x=9", param(1), [("x", 1)]),
     ("x, y=9, *a, **kw", param(1), [("x", 1), ("y", 9)]),
     ("x, y=9, *a, **kw", param(1, 2), [("x", 1), ("y", 2)]),
-    ("x, y=9, *a, **kw", param(1, 2, 3), [("x", 1), ("y", 2), ("*a", (3,))]),
+    ("x, y=9, *a, **kw", param(1, 2, 3), [("x", 1), ("y", 2), ("*a", (3, ))]),
     ("x, y=9, *a, **kw", param(1, y=2), [("x", 1), ("y", 2)]),
     ("x, y=9, *a, **kw", param(1, z=2), [("x", 1), ("y", 9), ("**kw", {"z": 2})]),
-    ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3,)), ("**kw", {"z": 3})]),
+    ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3, )), ("**kw", {"z": 3})]),
 ])
 def test_parameterized_argument_value_pairs(func_params, p, expected):
-    helper = eval("lambda %s: None" % (func_params,))
+    helper = eval("lambda %s: None" %(func_params, ))
     actual = parameterized_argument_value_pairs(helper, p)
     assert_equal(actual, expected)
 
@@ -307,9 +294,8 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
 def test_short_repr(input, expected, n=6):
     assert_equal(short_repr(input, n=n), expected)
 
-
 @parameterized([
-    ("foo",),
+    ("foo", ),
 ])
 def test_with_docstring(input):
     """ Docstring! """
@@ -317,6 +303,9 @@ def test_with_docstring(input):
 
 
 @parameterized.parameterized_class(('a', 'b', 'c'), [
+    (0, 5, 6),
+    (None, None, None),
+    ({}, [], []),
     ("", param(), []),
     ("*a, **kw", param(), []),
     ("*a, **kw", param(1, foo=42), [("*a", (1,)), ("**kw", {"foo": 42})]),
