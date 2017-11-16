@@ -1,21 +1,21 @@
 language: python
 sudo: false
 env:
-  - TOXENV=py26-nose
-  - TOXENV=py26-nose2
-  - TOXENV=py26-pytest
-  - TOXENV=py26-unit
-  - TOXENV=py26-unit2
   - TOXENV=py27-nose
   - TOXENV=py27-nose2
   - TOXENV=py27-pytest
   - TOXENV=py27-unit
   - TOXENV=py27-unit2
-  - TOXENV=py33-nose
-  - TOXENV=py33-nose2
-  - TOXENV=py33-pytest
-  - TOXENV=py33-unit
-  - TOXENV=py33-unit2
+  - TOXENV=py35-nose
+  - TOXENV=py35-nose2
+  - TOXENV=py35-pytest
+  - TOXENV=py35-unit
+  - TOXENV=py35-unit2
+  - TOXENV=py36-nose
+  - TOXENV=py36-nose2
+  - TOXENV=py36-pytest
+  - TOXENV=py36-unit
+  - TOXENV=py36-unit2
   - TOXENV=pypy-nose
   - TOXENV=pypy-nose2
   - TOXENV=pypy-pytest
