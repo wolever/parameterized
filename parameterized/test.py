@@ -323,6 +323,45 @@ def test_with_docstring(input):
     ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3,)), ("**kw", {"z": 3})]),
 ])
 class TestParameterizedClass(TestCase):
+    expect(['TestParameterizedClass_1:test_method_a()',
+            'TestParameterizedClass_1:test_method_b()',
+            'TestParameterizedClass_2:test_method_a()',
+            'TestParameterizedClass_2:test_method_b()',
+            'TestParameterizedClass_3:test_method_a()',
+            'TestParameterizedClass_3:test_method_b()',
+            'TestParameterizedClass_4:test_method_a()',
+            'TestParameterizedClass_4:test_method_b()',
+            'TestParameterizedClass_5:test_method_a()',
+            'TestParameterizedClass_5:test_method_b()',
+            'TestParameterizedClass_6:test_method_a()',
+            'TestParameterizedClass_6:test_method_b()',
+            'TestParameterizedClass_7:test_method_a()',
+            'TestParameterizedClass_7:test_method_b()',
+            'TestParameterizedClass_8:test_method_a()',
+            'TestParameterizedClass_8:test_method_b()',
+            'TestParameterizedClass_9:test_method_a()',
+            'TestParameterizedClass_9:test_method_b()',
+            'TestParameterizedClass_10:test_method_a()',
+            'TestParameterizedClass_10:test_method_b()',
+            'TestParameterizedClass_11:test_method_a()',
+            'TestParameterizedClass_11:test_method_b()',
+            'TestParameterizedClass_12:test_method_a()',
+            'TestParameterizedClass_12:test_method_b()',
+            'TestParameterizedClass_13:test_method_a()',
+            'TestParameterizedClass_13:test_method_b()',
+            'TestParameterizedClass_14:test_method_a()',
+            'TestParameterizedClass_14:test_method_b()',
+            'TestParameterizedClass_15:test_method_a()',
+            'TestParameterizedClass_15:test_method_b()',
+            'TestParameterizedClass_16:test_method_a()',
+            'TestParameterizedClass_16:test_method_b()',
+            'TestParameterizedClass_17:test_method_a()',
+            'TestParameterizedClass_17:test_method_b()',
+            'TestParameterizedClass_18:test_method_a()',
+            'TestParameterizedClass_18:test_method_b()'
+
+            ])
+
     def _assertions(self):
         assert hasattr(self, 'a')
         assert hasattr(self, 'b')
@@ -330,7 +369,10 @@ class TestParameterizedClass(TestCase):
 
     def test_method_a(self):
         self._assertions()
+        missing_tests.remove("%s:test_method_a()" %self.__class__.__name__)
 
     def test_method_b(self):
         self._assertions()
+        missing_tests.remove("%s:test_method_b()" %self.__class__.__name__)
+
 
