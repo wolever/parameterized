@@ -388,7 +388,7 @@ class parameterized(object):
 
 
     @classmethod
-    def parameterized_class(cls, attribute_names, input_values):
+    def parameterized_class(cls, attribute_names, input_values, name_func=None):
         """
         A method for parameterizing test classes.
         This sets the defined tuples in properties as attributes in the class
@@ -397,20 +397,29 @@ class parameterized(object):
         :param input_values: array of tuples
 
         """
+
+        name_func = name_func or default_name_func
+
         def decorator(base_class):
             test_class_module = sys.modules[base_class.__module__].__dict__
-            for test_value_key, test_field in enumerate(input_values):
+            paramters = cls.input_as_callable(input_values)()
+            for test_value_key, test_field in enumerate(paramters):
                 test_class_dict = dict(base_class.__dict__)
 
                 if isinstance(attribute_names, string_types):
                     test_class_dict[attribute_names] = test_field
+                    name = name_func(base_class, test_value_key, test_field)
                 elif len(attribute_names) == len(test_field):
                     for j, property_key in enumerate(attribute_names):
                         test_class_dict[property_key] = test_field[j]
-                _create_module(base_class, test_class_module, test_value_key, test_class_dict)
+                        name = name_func(base_class, test_value_key, test_field)
+                else:
+                    name = '{method_name}_{index}'.format(method_name=base_class.__name__, index=test_value_key + 1)
+                _create_module(base_class, test_class_module, test_value_key, test_class_dict, name)
 
-        def _create_module(b, test_class_module, test_value_key, test_class_dict):
-            name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
+        def _create_module(b, test_class_module, test_value_key, test_class_dict, name):
+            # name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
+            # name = name_func(b.__name__, test_value_key, test_value)
             test_class_module[name] = type(name, (b,), test_class_dict)
 
         return decorator
