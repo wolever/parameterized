@@ -300,3 +300,17 @@ def test_short_repr(input, expected, n=6):
 def test_with_docstring(input):
     """ Docstring! """
     pass
+
+
+cases_over_10 = [(i, i+1) for i in range(11)]
+
+@parameterized(cases_over_10)
+def test_cases_over_10(input, expected):
+    assert_equal(input, expected-1)
+
+
+cases_over_100 = [(i, i+1) for i in range(101)]
+
+@parameterized(cases_over_100)
+def test_cases_over_100(input, expected):
+    assert_equal(input, expected-1)

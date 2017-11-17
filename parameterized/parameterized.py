@@ -426,7 +426,7 @@ class parameterized(object):
             paramters = cls.input_as_callable(input)()
             digit = len(str(len(paramters) - 1))
             for num, p in enumerate(paramters):
-                name = name_func(f, "{1:0>{0}}".format(digit, num), p)
+                name = name_func(f, "{num:0>{digit}}".format(digit=digit, num=num), p)
                 frame_locals[name] = cls.param_as_standalone_func(p, f, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)
 
