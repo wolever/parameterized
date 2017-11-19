@@ -376,3 +376,23 @@ class TestParameterizedClass(TestCase):
         missing_tests.remove("%s:test_method_b()" %self.__class__.__name__)
 
 
+@parameterized.parameterized_class('version', ['v1.0', 'v1.1', 'v1.2'],
+                                   plain_class_name=False)
+class TestParameterizedClassWithPlainClassNameFalse(TestCase):
+    expect(['TestParameterizedClassWithPlainClassNameFalse_0_v1_0:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_0_v1_0:test_method_b()',
+            'TestParameterizedClassWithPlainClassNameFalse_1_v1_1:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_1_v1_1:test_method_b()',
+            'TestParameterizedClassWithPlainClassNameFalse_2_v1_2:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_2_v1_2:test_method_b()'])
+
+    def _assertions(self):
+        assert hasattr(self, 'version')
+
+    def test_method_a(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_a()" % self.__class__.__name__)
+
+    def test_method_b(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_b()" % self.__class__.__name__)
