@@ -1,5 +1,6 @@
 0.6.2 (???)
     * Make sure that `setUp` and `tearDown` methods work correctly (#40)
+    * Fix the order when number of cases exceeds 10
 
 0.6.1 (2017-03-21)
     * Rename package from nose-parameterized to parameterized. A
