@@ -300,3 +300,100 @@ def test_short_repr(input, expected, n=6):
 def test_with_docstring(input):
     """ Docstring! """
     pass
+
+
+@parameterized.parameterized_class(('a', 'b', 'c'), [
+    (0, 5, 6),
+    (None, None, None),
+    ({}, [], []),
+    ("", param(), []),
+    ("*a, **kw", param(), []),
+    ("*a, **kw", param(1, foo=42), [("*a", (1,)), ("**kw", {"foo": 42})]),
+    ("foo", param(1), [("foo", 1)]),
+    ("foo, *a", param(1), [("foo", 1)]),
+    ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9,))]),
+    ("foo, *a, **kw", param(1, bar=9), [("foo", 1), ("**kw", {"bar": 9})]),
+    ("x=9", param(), [("x", 9)]),
+    ("x=9", param(1), [("x", 1)]),
+    ("x, y=9, *a, **kw", param(1), [("x", 1), ("y", 9)]),
+    ("x, y=9, *a, **kw", param(1, 2), [("x", 1), ("y", 2)]),
+    ("x, y=9, *a, **kw", param(1, 2, 3), [("x", 1), ("y", 2), ("*a", (3,))]),
+    ("x, y=9, *a, **kw", param(1, y=2), [("x", 1), ("y", 2)]),
+    ("x, y=9, *a, **kw", param(1, z=2), [("x", 1), ("y", 9), ("**kw", {"z": 2})]),
+    ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3,)), ("**kw", {"z": 3})]),
+])
+class TestParameterizedClass(TestCase):
+    expect([
+        'TestParameterizedClass_1:test_method_a()',
+        'TestParameterizedClass_1:test_method_b()',
+        'TestParameterizedClass_2:test_method_a()',
+        'TestParameterizedClass_2:test_method_b()',
+        'TestParameterizedClass_3:test_method_a()',
+        'TestParameterizedClass_3:test_method_b()',
+        'TestParameterizedClass_4:test_method_a()',
+        'TestParameterizedClass_4:test_method_b()',
+        'TestParameterizedClass_5:test_method_a()',
+        'TestParameterizedClass_5:test_method_b()',
+        'TestParameterizedClass_6:test_method_a()',
+        'TestParameterizedClass_6:test_method_b()',
+        'TestParameterizedClass_7:test_method_a()',
+        'TestParameterizedClass_7:test_method_b()',
+        'TestParameterizedClass_8:test_method_a()',
+        'TestParameterizedClass_8:test_method_b()',
+        'TestParameterizedClass_9:test_method_a()',
+        'TestParameterizedClass_9:test_method_b()',
+        'TestParameterizedClass_10:test_method_a()',
+        'TestParameterizedClass_10:test_method_b()',
+        'TestParameterizedClass_11:test_method_a()',
+        'TestParameterizedClass_11:test_method_b()',
+        'TestParameterizedClass_12:test_method_a()',
+        'TestParameterizedClass_12:test_method_b()',
+        'TestParameterizedClass_13:test_method_a()',
+        'TestParameterizedClass_13:test_method_b()',
+        'TestParameterizedClass_14:test_method_a()',
+        'TestParameterizedClass_14:test_method_b()',
+        'TestParameterizedClass_15:test_method_a()',
+        'TestParameterizedClass_15:test_method_b()',
+        'TestParameterizedClass_16:test_method_a()',
+        'TestParameterizedClass_16:test_method_b()',
+        'TestParameterizedClass_17:test_method_a()',
+        'TestParameterizedClass_17:test_method_b()',
+        'TestParameterizedClass_18:test_method_a()',
+        'TestParameterizedClass_18:test_method_b()'
+
+    ])
+
+    def _assertions(self):
+        assert hasattr(self, 'a')
+        assert hasattr(self, 'b')
+        assert hasattr(self, 'c')
+
+    def test_method_a(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_a()" %self.__class__.__name__)
+
+    def test_method_b(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_b()" %self.__class__.__name__)
+
+
+@parameterized.parameterized_class('version', ['v1.0', 'v1.1', 'v1.2'],
+                                   plain_class_name=False)
+class TestParameterizedClassWithPlainClassNameFalse(TestCase):
+    expect(['TestParameterizedClassWithPlainClassNameFalse_0_v1_0:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_0_v1_0:test_method_b()',
+            'TestParameterizedClassWithPlainClassNameFalse_1_v1_1:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_1_v1_1:test_method_b()',
+            'TestParameterizedClassWithPlainClassNameFalse_2_v1_2:test_method_a()',
+            'TestParameterizedClassWithPlainClassNameFalse_2_v1_2:test_method_b()'])
+
+    def _assertions(self):
+        assert hasattr(self, 'version')
+
+    def test_method_a(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_a()" % self.__class__.__name__)
+
+    def test_method_b(self):
+        self._assertions()
+        missing_tests.remove("%s:test_method_b()" % self.__class__.__name__)

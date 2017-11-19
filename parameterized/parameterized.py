@@ -386,6 +386,49 @@ class parameterized(object):
             input_values = list(input_values)
         return [ param.from_decorator(p) for p in input_values ]
 
+
+    @classmethod
+    def parameterized_class(cls, attribute_names, input_values, plain_class_name=True, name_func=None):
+        """
+        A method for parameterizing test classes.
+        This sets the defined tuples in properties as attributes in the class
+        and sets its corresponding values defined in input_values
+        :param attribute_names: tuple of strings or string value
+        :param input_values: array of tuples
+        :param plain_class_name: option to change the test class name with just index
+        :param name_func: a strategy function to change test class name
+
+        """
+
+        name_func = name_func or default_name_func
+
+        def decorator(base_class):
+            test_class_module = sys.modules[base_class.__module__].__dict__
+            paramters = cls.input_as_callable(input_values)()
+            for test_value_key, test_field in enumerate(paramters):
+                test_class_dict = dict(base_class.__dict__)
+
+                if isinstance(attribute_names, string_types):
+                    test_class_dict[attribute_names] = test_field
+                elif len(attribute_names) == len(test_field.args):
+                    for j, property_key in enumerate(attribute_names):
+                        test_class_dict[property_key] = test_field.args[j]
+                else:
+                    raise Exception("Length of attribute_names and input_values are different.")
+
+                _create_module(base_class, test_class_module, test_value_key, test_class_dict, test_field)
+
+        def _create_module(b, test_class_module, test_value_key, test_class_dict, test_field):
+            if plain_class_name:
+                name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
+            else:
+                name = name_func(b, test_value_key, test_field)
+
+            test_class_module[name] = type(name, (b,), test_class_dict)
+
+        return decorator
+
+
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
