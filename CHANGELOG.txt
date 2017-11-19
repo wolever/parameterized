@@ -1,3 +1,7 @@
+0.6.3 (2017-11-18)
+    * Added parameterized_class feature. Now it supports
+    parameterized for an entire test class setting new attributes
+    and values.
 0.6.2 (???)
     * Make sure that `setUp` and `tearDown` methods work correctly (#40)
 
