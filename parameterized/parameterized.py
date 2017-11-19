@@ -388,13 +388,15 @@ class parameterized(object):
 
 
     @classmethod
-    def parameterized_class(cls, attribute_names, input_values, name_func=None):
+    def parameterized_class(cls, attribute_names, input_values, plain_class_name=True, name_func=None):
         """
         A method for parameterizing test classes.
         This sets the defined tuples in properties as attributes in the class
         and sets its corresponding values defined in input_values
         :param attribute_names: tuple of strings or string value
         :param input_values: array of tuples
+        :param plain_class_name: option to change the test class name with just index
+        :param name_func: a strategy function to change test class name
 
         """
 
@@ -408,18 +410,20 @@ class parameterized(object):
 
                 if isinstance(attribute_names, string_types):
                     test_class_dict[attribute_names] = test_field
-                    name = name_func(base_class, test_value_key, test_field)
-                elif len(attribute_names) == len(test_field):
+                elif len(attribute_names) == len(test_field.args):
                     for j, property_key in enumerate(attribute_names):
-                        test_class_dict[property_key] = test_field[j]
-                        name = name_func(base_class, test_value_key, test_field)
+                        test_class_dict[property_key] = test_field.args[j]
                 else:
-                    name = '{method_name}_{index}'.format(method_name=base_class.__name__, index=test_value_key + 1)
-                _create_module(base_class, test_class_module, test_value_key, test_class_dict, name)
+                    raise Exception("Length of attribute_names and input_values are different.")
 
-        def _create_module(b, test_class_module, test_value_key, test_class_dict, name):
-            # name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
-            # name = name_func(b.__name__, test_value_key, test_value)
+                _create_module(base_class, test_class_module, test_value_key, test_class_dict, test_field)
+
+        def _create_module(b, test_class_module, test_value_key, test_class_dict, test_field):
+            if plain_class_name:
+                name = '{method_name}_{index}'.format(method_name=b.__name__, index=test_value_key + 1)
+            else:
+                name = name_func(b, test_value_key, test_field)
+
             test_class_module[name] = type(name, (b,), test_class_dict)
 
         return decorator
