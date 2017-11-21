@@ -415,6 +415,7 @@ The second argument is an array of tuples, each tuple must have the same length 
 they correspond to the property values the following is an example using the django test framework:
 
 .. code:: python
+
     from app.models import User
     from django.test import Client, TestCase
     from parameterized import parameterized
@@ -429,7 +430,7 @@ they correspond to the property values the following is an example using the dja
 
         def test_url_a(self):
             response = self.client.get('/url')
-            if(self.access_level == 1)
+            if(self.access_level == 1):
                 self.assertEqual(response.status_code, 200)
             else:
                 self.assertNotEqual(response.status_code, 200)
@@ -437,7 +438,7 @@ they correspond to the property values the following is an example using the dja
         def tearDown(self):
             self.client.logout()
 
-::
+
 
 
 Migrating from ``nose-parameterized`` to ``parameterized``
