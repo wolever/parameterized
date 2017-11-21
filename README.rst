@@ -437,6 +437,9 @@ they correspond to the property values the following is an example using the dja
         def tearDown(self):
             self.client.logout()
 
+::
+
+
 Migrating from ``nose-parameterized`` to ``parameterized``
 ----------------------------------------------------------
 
