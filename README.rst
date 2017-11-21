@@ -417,10 +417,12 @@ they correspond to the property values the following is an example using the dja
 .. code:: python
 
     from app.models import User
-    from django.test import Client, TestCase
+    from django.test import TestCase
     from parameterized import parameterized
 
-    @parameterized.parameterized_class(('username','access_level'), [('user_1',1),('user_2',2)])
+    @parameterized.parameterized_class(('username','access_level'), [
+        ('user_1', 1),('user_2', 2)
+    ])
     class TestUserAccessLevel(TestCase):
         fixtures = ['default_users']
 
