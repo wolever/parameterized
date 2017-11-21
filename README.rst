@@ -412,43 +412,30 @@ with the ``doc_func`` argument:
 Finally ``@parameterized.parameterized_class`` works for an entire test class, the first parameter is a tuple
 of strings or a single string, this data is going to be converted as a class properties.
 The second argument is an array of tuples, each tuple must have the same length as the first parameter because
- they correspond to the property values:
+they correspond to the property values the following is an example using the django test framework:
 
 .. code:: python
+    from app.models import User
     from django.test import Client, TestCase
     from parameterized import parameterized
 
-    @parameterized.parameterized_class('version_url', ['/v1.1/', '/v1.2/'])
-    class TestAPI(TestCase):
-        def _assertions(self):
-            assert hasattr(self, 'version_url')
+    @parameterized.parameterized_class(('username','access_level'), [('user_1',1),('user_2',2)])
+    class TestUserAccessLevel(TestCase):
+        fixtures = ['default_users']
+
+        def setUp(self):
+            self.client.force_login(User.objects.get(
+                username=self.username)[0])
 
         def test_url_a(self):
-            self.client.get(self.version_url + '/url_a'
-            self._assertions()
+            response = self.client.get('/url')
+            if(self.access_level == 1)
+                self.assertEqual(response.status_code, 200)
+            else:
+                self.assertNotEqual(response.status_code, 200)
 
-        def test_url_b(self):
-            self.client.get(self.version_url + '/url_b'
-            self._assertions()
-
-
-    @parameterized.parameterized_class(('a', 'b', 'c'), [
-        (0, 5, 6),
-        (None, None, None),
-        ({}, [], [])
-    ])
-    class TestMathClass(unittest.TestCase):
-        def _assertions(self):
-            assert hasattr(self, 'a')
-            assert hasattr(self, 'b')
-            assert hasattr(self, 'c')
-
-        def test_method_a(self):
-            self._assertions()
-
-        def test_method_b(self):
-            self._assertions()
-
+        def tearDown(self):
+            self.client.logout()
 
 Migrating from ``nose-parameterized`` to ``parameterized``
 ----------------------------------------------------------
