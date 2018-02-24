@@ -40,6 +40,31 @@ else:
 
 _param = namedtuple("param", "args kwargs")
 
+
+def reapply_patches_if_need(func):
+
+    def dummy_wrapper(orgfunc):
+        @wraps(orgfunc)
+        def dummy_func(*args, **kwargs):
+            return orgfunc(*args, **kwargs)
+        return dummy_func
+
+    if hasattr(func, 'patchings'):
+        func = dummy_wrapper(func)
+        tmp_patchings = func.patchings
+        delattr(func, 'patchings')
+        for i, patch_obj in enumerate(tmp_patchings):
+            func = patch_obj.decorate_callable(func)
+
+    return func
+
+
+def delete_patches_if_need(func):
+    if hasattr(func, 'patchings'):
+        for _ in range(len(func.patchings)):
+            func.patchings.pop()
+
+
 class param(_param):
     """ Represents a single parameter to a test case.
 
@@ -426,8 +451,16 @@ class parameterized(object):
             paramters = cls.input_as_callable(input)()
             for num, p in enumerate(paramters):
                 name = name_func(f, num, p)
-                frame_locals[name] = cls.param_as_standalone_func(p, f, name)
+                # If original function applied any patch, re-construct
+                # all patches on the just former decoration layer of
+                # param_as_standalone_func so as not to share
+                # patch objects between new functions
+                nf = reapply_patches_if_need(f)
+                frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)
+            # Delete original patches to prevent new function from evaluating
+            # original patching object as well as re-constructed patches.
+            delete_patches_if_need(f)
 
             f.__test__ = False
         return parameterized_expand_wrapper
