@@ -53,16 +53,14 @@ def reapply_patches_if_need(func):
         func = dummy_wrapper(func)
         tmp_patchings = func.patchings
         delattr(func, 'patchings')
-        for i, patch_obj in enumerate(tmp_patchings):
+        for _, patch_obj in enumerate(tmp_patchings):
             func = patch_obj.decorate_callable(func)
-
     return func
 
 
 def delete_patches_if_need(func):
     if hasattr(func, 'patchings'):
-        for _ in range(len(func.patchings)):
-            func.patchings.pop()
+        func.patchings[:] = []
 
 
 class param(_param):
