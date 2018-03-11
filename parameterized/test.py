@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import inspect
+import mock
 from unittest import TestCase
 from nose.tools import assert_equal
 from nose.plugins.skip import SkipTest
@@ -99,6 +100,74 @@ def custom_naming_func(custom_tag):
         return testcase_func.__name__ + ('_%s_name_' % custom_tag) + str(param.args[0])
 
     return custom_naming_func
+
+
+@mock.patch("os.getpid")
+class TestParameterizedExpandWithMockPatchForClass(TestCase):
+    expect([
+        "test_one_function_patch_decorator('foo1', 'umask', 'getpid')",
+        "test_one_function_patch_decorator('foo0', 'umask', 'getpid')",
+        "test_one_function_patch_decorator(42, 'umask', 'getpid')",
+    ])
+
+    @parameterized.expand([(42, ), "foo0", param("foo1")])
+    @mock.patch("os.umask")
+    def test_one_function_patch_decorator(self, foo, mock_umask, mock_getpid):
+        missing_tests.remove("test_one_function_patch_decorator(%r, %r, %r)" %
+                             (foo, mock_umask._mock_name,
+                              mock_getpid._mock_name))
+
+    expect([
+        "test_multiple_function_patch_decorator"
+        "(42, 51, 'umask', 'fdopen', 'getpid')",
+        "test_multiple_function_patch_decorator"
+        "('foo0', 'bar0', 'umask', 'fdopen', 'getpid')",
+        "test_multiple_function_patch_decorator"
+        "('foo1', 'bar1', 'umask', 'fdopen', 'getpid')",
+    ])
+
+    @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
+    @mock.patch("os.fdopen")
+    @mock.patch("os.umask")
+    def test_multiple_function_patch_decorator(self, foo, bar, mock_umask,
+                                               mock_fdopen, mock_getpid):
+        missing_tests.remove("test_multiple_function_patch_decorator"
+                             "(%r, %r, %r, %r, %r)" %
+                             (foo, bar, mock_umask._mock_name,
+                              mock_fdopen._mock_name, mock_getpid._mock_name))
+
+
+class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
+    expect([
+        "test_one_function_patch_decorator('foo1', 'umask')",
+        "test_one_function_patch_decorator('foo0', 'umask')",
+        "test_one_function_patch_decorator(42, 'umask')",
+    ])
+
+    @parameterized.expand([(42, ), "foo0", param("foo1")])
+    @mock.patch("os.umask")
+    def test_one_function_patch_decorator(self, foo, mock_umask):
+        missing_tests.remove("test_one_function_patch_decorator(%r, %r)" %
+                             (foo, mock_umask._mock_name))
+
+    expect([
+        "test_multiple_function_patch_decorator"
+        "(42, 51, 'umask', 'fdopen')",
+        "test_multiple_function_patch_decorator"
+        "('foo0', 'bar0', 'umask', 'fdopen')",
+        "test_multiple_function_patch_decorator"
+        "('foo1', 'bar1', 'umask', 'fdopen')",
+    ])
+
+    @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
+    @mock.patch("os.fdopen")
+    @mock.patch("os.umask")
+    def test_multiple_function_patch_decorator(self, foo, bar, mock_umask,
+                                               mock_fdopen):
+        missing_tests.remove("test_multiple_function_patch_decorator"
+                             "(%r, %r, %r, %r)" %
+                             (foo, bar, mock_umask._mock_name,
+                              mock_fdopen._mock_name))
 
 
 class TestParamerizedOnTestCase(TestCase):
