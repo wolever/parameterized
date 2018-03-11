@@ -107,7 +107,8 @@ class TestParameterizedExpandWithMockPatchForClass(TestCase):
     expect([
         "test_one_function_patch_decorator('foo1', 'umask', 'getpid')",
         "test_one_function_patch_decorator('foo0', 'umask', 'getpid')",
-        "test_one_function_patch_decorator(42, 'umask', 'getpid')"])
+        "test_one_function_patch_decorator(42, 'umask', 'getpid')",
+    ])
 
     @parameterized.expand([(42, ), "foo0", param("foo1")])
     @mock.patch("os.umask")
@@ -122,7 +123,8 @@ class TestParameterizedExpandWithMockPatchForClass(TestCase):
         "test_multiple_function_patch_decorator"
         "('foo0', 'bar0', 'umask', 'fdopen', 'getpid')",
         "test_multiple_function_patch_decorator"
-        "('foo1', 'bar1', 'umask', 'fdopen', 'getpid')"])
+        "('foo1', 'bar1', 'umask', 'fdopen', 'getpid')",
+    ])
 
     @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
     @mock.patch("os.fdopen")
@@ -139,7 +141,8 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
     expect([
         "test_one_function_patch_decorator('foo1', 'umask')",
         "test_one_function_patch_decorator('foo0', 'umask')",
-        "test_one_function_patch_decorator(42, 'umask')"])
+        "test_one_function_patch_decorator(42, 'umask')",
+    ])
 
     @parameterized.expand([(42, ), "foo0", param("foo1")])
     @mock.patch("os.umask")
@@ -153,7 +156,8 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
         "test_multiple_function_patch_decorator"
         "('foo0', 'bar0', 'umask', 'fdopen')",
         "test_multiple_function_patch_decorator"
-        "('foo1', 'bar1', 'umask', 'fdopen')"])
+        "('foo1', 'bar1', 'umask', 'fdopen')",
+    ])
 
     @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
     @mock.patch("os.fdopen")

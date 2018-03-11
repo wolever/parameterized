@@ -53,7 +53,7 @@ def reapply_patches_if_need(func):
         func = dummy_wrapper(func)
         tmp_patchings = func.patchings
         delattr(func, 'patchings')
-        for _, patch_obj in enumerate(tmp_patchings):
+        for patch_obj in tmp_patchings:
             func = patch_obj.decorate_callable(func)
     return func
 
@@ -449,9 +449,9 @@ class parameterized(object):
             paramters = cls.input_as_callable(input)()
             for num, p in enumerate(paramters):
                 name = name_func(f, num, p)
-                # If original function applied any patch, re-construct
-                # all patches on the just former decoration layer of
-                # param_as_standalone_func so as not to share
+                # If the original function has patches applied by 'mock.patch',
+                # re-construct all patches on the just former decoration layer
+                # of param_as_standalone_func so as not to share
                 # patch objects between new functions
                 nf = reapply_patches_if_need(f)
                 frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
