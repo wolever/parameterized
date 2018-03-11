@@ -2,12 +2,11 @@
 
 import inspect
 from unittest import TestCase
-from nose.tools import assert_equal
-from nose.plugins.skip import SkipTest
+from nose.tools import assert_equal, assert_raises
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
-    short_repr, detect_runner,
+    short_repr, detect_runner, SkipTest
 )
 
 def assert_contains(haystack, needle):
@@ -219,20 +218,25 @@ def test_helpful_error_on_empty_iterable_input():
     try:
         parameterized([])(lambda: None)
     except ValueError as e:
-        assert_contains(str(e), "Parameters iterable was empty")
+        assert_contains(str(e), "iterable is empty")
     else:
         raise AssertionError("Expected exception not raised")
 
+def test_skip_test_on_empty_iterable():
+    func = parameterized([], skip_on_empty=True)(lambda: None)
+    assert_raises(SkipTest, func)
 
-try:
-    class ExpectErrorOnEmptyInput(TestCase):
-        @parameterized.expand([])
-        def test_expect_error(self):
-            pass
-except ValueError as e:
-    assert_contains(str(e), "input was empty")
-else:
-    raise AssertionError("Expected exception not raised")
+
+def test_helpful_error_on_empty_iterable_input_expand():
+    try:
+        class ExpectErrorOnEmptyInput(TestCase):
+            @parameterized.expand([])
+            def test_expect_error(self):
+                pass
+    except ValueError as e:
+        assert_contains(str(e), "iterable is empty")
+    else:
+        raise AssertionError("Expected exception not raised")
 
 
 expect("generator", [
