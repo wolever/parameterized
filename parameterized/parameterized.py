@@ -478,8 +478,9 @@ class parameterized(object):
                     )
                 return wraps(f)(lambda: skip_on_empty_helper())
 
+            digits = len(str(len(paramters) - 1))
             for num, p in enumerate(paramters):
-                name = name_func(f, num, p)
+                name = name_func(f, "{num:0>{digits}}".format(digits=digits, num=num), p)
                 # If the original function has patches applied by 'mock.patch',
                 # re-construct all patches on the just former decoration layer
                 # of param_as_standalone_func so as not to share
@@ -487,6 +488,7 @@ class parameterized(object):
                 nf = reapply_patches_if_need(f)
                 frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)
+
             # Delete original patches to prevent new function from evaluating
             # original patching object as well as re-constructed patches.
             delete_patches_if_need(f)

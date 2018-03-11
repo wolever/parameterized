@@ -2,6 +2,8 @@
     * Make sure that `setUp` and `tearDown` methods work correctly (#40)
     * Raise a ValueError when input is empty (thanks @danielbradburn;
       https://github.com/wolever/parameterized/pull/48)
+    * Fix the order when number of cases exceeds 10 (thanks @ntflc;
+      https://github.com/wolever/parameterized/pull/49)
 
 0.6.1 (2017-03-21)
     * Rename package from nose-parameterized to parameterized. A
