@@ -7,7 +7,7 @@ from nose.plugins.skip import SkipTest
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
-    short_repr, detect_runner,
+    short_repr, detect_runner, parameterized_class,
 )
 
 def assert_contains(haystack, needle):
@@ -302,78 +302,56 @@ def test_with_docstring(input):
     pass
 
 
-@parameterized.parameterized_class(('a', 'b', 'c'), [
-    (0, 5, 6),
-    (None, None, None),
-    ({}, [], []),
-    ("", param(), []),
-    ("*a, **kw", param(), []),
-    ("*a, **kw", param(1, foo=42), [("*a", (1,)), ("**kw", {"foo": 42})]),
-    ("foo", param(1), [("foo", 1)]),
-    ("foo, *a", param(1), [("foo", 1)]),
-    ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9,))]),
-    ("foo, *a, **kw", param(1, bar=9), [("foo", 1), ("**kw", {"bar": 9})]),
-    ("x=9", param(), [("x", 9)]),
-    ("x=9", param(1), [("x", 1)]),
-    ("x, y=9, *a, **kw", param(1), [("x", 1), ("y", 9)]),
-    ("x, y=9, *a, **kw", param(1, 2), [("x", 1), ("y", 2)]),
-    ("x, y=9, *a, **kw", param(1, 2, 3), [("x", 1), ("y", 2), ("*a", (3,))]),
-    ("x, y=9, *a, **kw", param(1, y=2), [("x", 1), ("y", 2)]),
-    ("x, y=9, *a, **kw", param(1, z=2), [("x", 1), ("y", 9), ("**kw", {"z": 2})]),
-    ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3,)), ("**kw", {"z": 3})]),
+@parameterized_class(("a", "b", "c"), [
+    ("foo", 1, 2),
+    ("bar", 3, 0),
+    (0, 1, 2),
 ])
 class TestParameterizedClass(TestCase):
     expect([
-        'TestParameterizedClass_1:test_method_a()',
-        'TestParameterizedClass_1:test_method_b()',
-        'TestParameterizedClass_2:test_method_a()',
-        'TestParameterizedClass_2:test_method_b()',
-        'TestParameterizedClass_3:test_method_a()',
-        'TestParameterizedClass_3:test_method_b()',
-        'TestParameterizedClass_4:test_method_a()',
-        'TestParameterizedClass_4:test_method_b()',
-        'TestParameterizedClass_5:test_method_a()',
-        'TestParameterizedClass_5:test_method_b()',
-        'TestParameterizedClass_6:test_method_a()',
-        'TestParameterizedClass_6:test_method_b()',
-        'TestParameterizedClass_7:test_method_a()',
-        'TestParameterizedClass_7:test_method_b()',
-        'TestParameterizedClass_8:test_method_a()',
-        'TestParameterizedClass_8:test_method_b()',
-        'TestParameterizedClass_9:test_method_a()',
-        'TestParameterizedClass_9:test_method_b()',
-        'TestParameterizedClass_10:test_method_a()',
-        'TestParameterizedClass_10:test_method_b()',
-        'TestParameterizedClass_11:test_method_a()',
-        'TestParameterizedClass_11:test_method_b()',
-        'TestParameterizedClass_12:test_method_a()',
-        'TestParameterizedClass_12:test_method_b()',
-        'TestParameterizedClass_13:test_method_a()',
-        'TestParameterizedClass_13:test_method_b()',
-        'TestParameterizedClass_14:test_method_a()',
-        'TestParameterizedClass_14:test_method_b()',
-        'TestParameterizedClass_15:test_method_a()',
-        'TestParameterizedClass_15:test_method_b()',
-        'TestParameterizedClass_16:test_method_a()',
-        'TestParameterizedClass_16:test_method_b()',
-        'TestParameterizedClass_17:test_method_a()',
-        'TestParameterizedClass_17:test_method_b()',
-        'TestParameterizedClass_18:test_method_a()',
-        'TestParameterizedClass_18:test_method_b()'
-
+        "TestParameterizedClass_0_foo:test_method_a('foo', 1, 2)",
+        "TestParameterizedClass_0_foo:test_method_b('foo', 1, 2)",
+        "TestParameterizedClass_1_bar:test_method_a('bar', 3, 0)",
+        "TestParameterizedClass_1_bar:test_method_b('bar', 3, 0)",
+        "TestParameterizedClass_2:test_method_a(0, 1, 2)",
+        "TestParameterizedClass_2:test_method_b(0, 1, 2)",
     ])
 
-    def _assertions(self):
-        assert hasattr(self, 'a')
-        assert hasattr(self, 'b')
-        assert hasattr(self, 'c')
+    def _assertions(self, test_name):
+        assert hasattr(self, "a")
+        assert_equal(self.b + self.c, 3)
+        missing_tests.remove("%s:%s(%r, %r, %r)" %(
+            self.__class__.__name__,
+            test_name,
+            self.a,
+            self.b,
+            self.c,
+        ))
 
     def test_method_a(self):
-        self._assertions()
-        missing_tests.remove("%s:test_method_a()" %self.__class__.__name__)
+        self._assertions("test_method_a")
 
     def test_method_b(self):
-        self._assertions()
-        missing_tests.remove("%s:test_method_b()" %self.__class__.__name__)
+        self._assertions("test_method_b")
 
+
+@parameterized_class([
+    {"foo": 1},
+    {"bar": 1},
+])
+class TestParameterizedClassDict(TestCase):
+    expect([
+        "TestParameterizedClassDict_0:test_method(1, 0)",
+        "TestParameterizedClassDict_1:test_method(0, 1)",
+    ])
+
+    foo = 0
+    bar = 0
+
+    def test_method(self):
+        missing_tests.remove("%s:test_method(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
 

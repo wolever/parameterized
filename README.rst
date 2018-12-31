@@ -409,10 +409,7 @@ with the ``doc_func`` argument:
 
     OK
 
-Finally ``@parameterized.parameterized_class`` works for an entire test class, the first parameter is a tuple
-of strings or a single string, this data is going to be converted as a class properties.
-The second argument is an array of tuples, each tuple must have the same length as the first parameter because
-they correspond to the property values the following is an example using the django test framework:
+Finally ``@parameterized.expand_class`` parameterizes an entire class:
 
 .. code:: python
 
@@ -420,15 +417,13 @@ they correspond to the property values the following is an example using the dja
     from django.test import TestCase
     from parameterized import parameterized
 
-    @parameterized.parameterized_class(('username','access_level'), [
-        ('user_1', 1),('user_2', 2)
+    @parameterized.parameterized_class(('username', 'access_level'), [
+        ('user_1', 1),
+        ('user_2', 2)
     ])
     class TestUserAccessLevel(TestCase):
-        fixtures = ['default_users']
-
         def setUp(self):
-            self.client.force_login(User.objects.get(
-                username=self.username)[0])
+            self.client.force_login(User.objects.get(username=self.username)[0])
 
         def test_url_a(self):
             response = self.client.get('/url')
