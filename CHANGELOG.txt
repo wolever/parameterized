@@ -1,3 +1,7 @@
+0.7.0 (2018-12-30)
+    * Added parameterized_class feature, for parameterizing entire test
+      classes.
+
 0.6.2 (2018-03-11)
     * Make sure that `setUp` and `tearDown` methods work correctly (#40)
     * Raise a ValueError when input is empty (thanks @danielbradburn;

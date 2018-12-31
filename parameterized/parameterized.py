@@ -291,6 +291,7 @@ def detect_runner():
             _test_runner_guess = None
     return _test_runner_guess
 
+
 class parameterized(object):
     """ Parameterize a test case::
 
@@ -519,3 +520,61 @@ class parameterized(object):
     @classmethod
     def to_safe_name(cls, s):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
+
+
+def parameterized_class(attrs, input_values=None):
+    """ Parameterizes a test class by setting attributes on the class.
+
+        Can be used in two ways:
+
+        1) With a list of dictionaries containing attributes to override::
+
+            @parameterized_class([
+                { "username": "foo" },
+                { "username": "bar", "access_level": 2 },
+            ])
+            class TestUserAccessLevel(TestCase):
+                ...
+
+        2) With a tuple of attributes, then a list of tuples of values:
+
+            @parameterized_class(("username", "access_level"), [
+                ("foo", 1),
+                ("bar", 2)
+            ])
+            class TestUserAccessLevel(TestCase):
+                ...
+
+    """
+
+    if isinstance(attrs, string_types):
+        attrs = [attrs]
+
+    input_dicts = (
+        attrs if input_values is None else
+        [dict(zip(attrs, vals)) for vals in input_values]
+    )
+
+    def decorator(base_class):
+        test_class_module = sys.modules[base_class.__module__].__dict__
+        for idx, input_dict in enumerate(input_dicts):
+            test_class_dict = dict(base_class.__dict__)
+            test_class_dict.update(input_dict)
+
+            name_suffix = input_values and input_values[idx]
+            if isinstance(name_suffix, (list, tuple)) and len(input_values) > 0:
+                name_suffix = name_suffix[0]
+            name_suffix = (
+                "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
+                ""
+            )
+
+            name = "%s_%s%s" %(
+                base_class.__name__,
+                idx,
+                name_suffix,
+            )
+
+            test_class_module[name] = type(name, (base_class, ), test_class_dict)
+
+    return decorator

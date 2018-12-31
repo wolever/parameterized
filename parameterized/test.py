@@ -7,7 +7,7 @@ from nose.tools import assert_equal, assert_raises
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
-    short_repr, detect_runner, SkipTest
+    short_repr, detect_runner, parameterized_class, SkipTest,
 )
 
 def assert_contains(haystack, needle):
@@ -401,3 +401,57 @@ cases_over_10 = [(i, i+1) for i in range(11)]
 @parameterized(cases_over_10)
 def test_cases_over_10(input, expected):
     assert_equal(input, expected-1)
+
+
+@parameterized_class(("a", "b", "c"), [
+    ("foo", 1, 2),
+    ("bar", 3, 0),
+    (0, 1, 2),
+])
+class TestParameterizedClass(TestCase):
+    expect([
+        "TestParameterizedClass_0_foo:test_method_a('foo', 1, 2)",
+        "TestParameterizedClass_0_foo:test_method_b('foo', 1, 2)",
+        "TestParameterizedClass_1_bar:test_method_a('bar', 3, 0)",
+        "TestParameterizedClass_1_bar:test_method_b('bar', 3, 0)",
+        "TestParameterizedClass_2:test_method_a(0, 1, 2)",
+        "TestParameterizedClass_2:test_method_b(0, 1, 2)",
+    ])
+
+    def _assertions(self, test_name):
+        assert hasattr(self, "a")
+        assert_equal(self.b + self.c, 3)
+        missing_tests.remove("%s:%s(%r, %r, %r)" %(
+            self.__class__.__name__,
+            test_name,
+            self.a,
+            self.b,
+            self.c,
+        ))
+
+    def test_method_a(self):
+        self._assertions("test_method_a")
+
+    def test_method_b(self):
+        self._assertions("test_method_b")
+
+
+@parameterized_class([
+    {"foo": 1},
+    {"bar": 1},
+])
+class TestParameterizedClassDict(TestCase):
+    expect([
+        "TestParameterizedClassDict_0:test_method(1, 0)",
+        "TestParameterizedClassDict_1:test_method(0, 1)",
+    ])
+
+    foo = 0
+    bar = 0
+
+    def test_method(self):
+        missing_tests.remove("%s:test_method(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
