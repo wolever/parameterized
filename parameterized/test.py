@@ -136,6 +136,21 @@ class TestParameterizedExpandWithMockPatchForClass(TestCase):
                               mock_fdopen._mock_name, mock_getpid._mock_name))
 
 
+@mock.patch("os.getpid")
+class TestParameterizedExpandWithNoExpand(object):
+    expect("generator", [
+        "test_patch_class_no_expand(42, 51, 'umask', 'getpid')",
+    ])
+
+    @parameterized([(42, 51)])
+    @mock.patch("os.umask")
+    def test_patch_class_no_expand(self, foo, bar, mock_umask, mock_getpid):
+        missing_tests.remove("test_patch_class_no_expand"
+                             "(%r, %r, %r, %r)" %
+                             (foo, bar, mock_umask._mock_name,
+                              mock_getpid._mock_name))
+
+
 class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
     expect([
         "test_one_function_patch_decorator('foo1', 'umask')",
@@ -167,6 +182,18 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
                              "(%r, %r, %r, %r)" %
                              (foo, bar, mock_umask._mock_name,
                               mock_fdopen._mock_name))
+
+
+class TestParameterizedExpandWithNoMockPatchForClassNoExpand(object):
+    expect("generator", [
+        "test_patch_no_expand(42, 51, 'umask')",
+    ])
+
+    @parameterized([(42, 51)])
+    @mock.patch("os.umask")
+    def test_patch_no_expand(self, foo, bar, mock_umask):
+        missing_tests.remove("test_patch_no_expand(%r, %r, %r)" %
+                             (foo, bar, mock_umask._mock_name))
 
 
 class TestParamerizedOnTestCase(TestCase):

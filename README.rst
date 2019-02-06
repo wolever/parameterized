@@ -488,6 +488,22 @@ To migrate a codebase from ``nose-parameterized`` to ``parameterized``:
 
 3. You're done!
 
+Using with ``mock.patch``
+-------------------------
+
+``parameterized`` can be used with ``mock.patch``, but the argument ordering
+can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
+``@parameterized(...)``, and the mocked parameters must come *last*::
+
+   @mock.patch("os.getpid")
+   class TestOS(object):
+      @parameterized(...)
+      @mock.patch("os.fdopen")
+      @mock.patch("os.umask")
+      def test_method(self, param1, param2, ..., mock_umask, mock_fdopen, mock_getpid):
+         ...
+
+Note: the same holds true when using ``@parameterized.expand``.
 
 FAQ
 ---
