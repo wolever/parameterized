@@ -44,6 +44,20 @@ else:
     def make_method(func, instance, type):
         return MethodType(func, instance, type)
 
+CompatArgSpec = namedtuple("CompatArgSpec", "args varargs keywords defaults")
+def getargspec(func):
+    if PY2:
+        return CompatArgSpec(*inspect.getargspec(func))
+    args = inspect.getfullargspec(func)
+    if args.kwonlyargs:
+        raise TypeError((
+            "parameterized does not (yet) support functions with keyword "
+            "only arguments, but %r has keyword only arguments. "
+            "Please open an issue with your usecase if this affects you: "
+            "https://github.com/wolever/parameterized/issues/new"
+        ) %(func, ))
+    return CompatArgSpec(*args[:4])
+
 _param = namedtuple("param", "args kwargs")
 
 def skip_on_empty_helper(*a, **kw):
@@ -173,7 +187,7 @@ def parameterized_argument_value_pairs(func, p):
             >>> parameterized_argument_value_pairs(func, p)
             [("foo", 1), ("*args", (16, ))]
     """
-    argspec = inspect.getargspec(func)
+    argspec = getargspec(func)
     arg_offset = 1 if argspec.args[:1] == ["self"] else 0
 
     named_args = argspec.args[arg_offset:]
