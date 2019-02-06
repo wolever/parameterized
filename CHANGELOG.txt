@@ -1,6 +1,8 @@
-0.7.0 (2018-12-30)
+0.7.0 (2019-02-05)
     * Added parameterized_class feature, for parameterizing entire test
-      classes.
+      classes (many thanks to @TobyLL for their suggestions and help testing!)
+    * Fix DeprecationWarning on `inspect.getargs` (thanks @brettdh;
+      https://github.com/wolever/parameterized/issues/67)
 
 0.6.2 (2018-03-11)
     * Make sure that `setUp` and `tearDown` methods work correctly (#40)
