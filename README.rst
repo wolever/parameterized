@@ -431,7 +431,7 @@ with the ``doc_func`` argument:
 
     OK
 
-Finally ``@parameterized.expand_class`` parameterizes an entire class, using
+Finally ``@parameterized_class`` parameterizes an entire class, using
 either a list of attributes, or a list of dicts that will be applied to the
 class:
 
