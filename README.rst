@@ -473,6 +473,56 @@ class:
       def tearDown(self):
          self.client.logout()
 
+Using with Single Parameters
+............................
+
+If a test function only accepts one parameter and the value is not iterable,
+then it is possible to supply a list of values without wrapping each one in a
+tuple:
+
+.. code:: python
+
+   @parameterized([1, 2, 3])
+   def test_greater_than_zero(value):
+      assert value > 0
+
+Note, however, that if the single parameter *is* iterable (such as a list or
+tuple), then it *must* be wrapped in a tuple, list, or the ``param(...)``
+helper:
+
+.. code:: python
+
+   @parameterized([
+      ([1, 2, 3], ),
+      ([3, 3], ),
+      ([6], ),
+   ])
+   def test_sums_to_6(numbers):
+      assert sum(numbers) == 6
+
+(note, also, that Python requires single element tuples to be defined with a
+trailing comma: ``(foo, )``)
+
+
+Using with ``mock.patch``
+.........................
+
+``parameterized`` can be used with ``mock.patch``, but the argument ordering
+can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
+``@parameterized(...)``, and the mocked parameters must come *last*:
+
+.. code:: python
+
+   @mock.patch("os.getpid")
+   class TestOS(object):
+      @parameterized(...)
+      @mock.patch("os.fdopen")
+      @mock.patch("os.umask")
+      def test_method(self, param1, param2, ..., mock_umask, mock_fdopen, mock_getpid):
+         ...
+
+Note: the same holds true when using ``@parameterized.expand``.
+
 
 Migrating from ``nose-parameterized`` to ``parameterized``
 ----------------------------------------------------------
@@ -488,22 +538,6 @@ To migrate a codebase from ``nose-parameterized`` to ``parameterized``:
 
 3. You're done!
 
-Using with ``mock.patch``
--------------------------
-
-``parameterized`` can be used with ``mock.patch``, but the argument ordering
-can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
-``@parameterized(...)``, and the mocked parameters must come *last*::
-
-   @mock.patch("os.getpid")
-   class TestOS(object):
-      @parameterized(...)
-      @mock.patch("os.fdopen")
-      @mock.patch("os.umask")
-      def test_method(self, param1, param2, ..., mock_umask, mock_fdopen, mock_getpid):
-         ...
-
-Note: the same holds true when using ``@parameterized.expand``.
 
 FAQ
 ---
