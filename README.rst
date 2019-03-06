@@ -1,7 +1,14 @@
 Parameterized testing with any Python test framework
 ====================================================
 
-.. image:: https://travis-ci.org/wolever/parameterized.svg?branch=master
+|pypi| |travis|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/parameterized.svg
+    :alt: PyPI
+    :target: https://pypi.org/project/parameterized/
+
+.. |travis| image:: https://travis-ci.org/wolever/parameterized.svg?branch=master
+    :alt: Travis CI
     :target: https://travis-ci.org/wolever/parameterized
 
 Parameterized testing in Python sucks.
