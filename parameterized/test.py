@@ -21,6 +21,7 @@ PYTEST = (runner == "pytest")
 
 SKIP_FLAGS = {
     "generator": UNITTEST,
+    "standalone": UNITTEST,
     # nose2 doesn't run tests on old-style classes under Py2, so don't expect
     # these tests to run under nose2.
     "py2nose2": (PY2 and NOSE2),
@@ -44,7 +45,7 @@ test_params = [
     param("foo2", bar=42),
 ]
 
-expect("generator", [
+expect("standalone", [
     "test_naked_function('foo0', bar=None)",
     "test_naked_function('foo1', bar=None)",
     "test_naked_function('foo2', bar=42)",
@@ -196,6 +197,20 @@ class TestParameterizedExpandWithNoMockPatchForClassNoExpand(object):
                              (foo, bar, mock_umask._mock_name))
 
 
+expect("standalone", [
+    "test_mock_patch_standalone_function(42, 'umask')",
+])
+
+@parameterized([(42, )])
+@mock.patch("os.umask")
+def test_mock_patch_standalone_function(foo, mock_umask):
+    missing_tests.remove(
+        "test_mock_patch_standalone_function(%r, %r)" %(
+            foo, mock_umask._mock_name
+        )
+    )
+
+
 class TestParamerizedOnTestCase(TestCase):
     expect([
         "test_on_TestCase('foo0', bar=None)",
@@ -335,7 +350,7 @@ def test_helpful_error_on_empty_iterable_input_expand():
         raise AssertionError("Expected exception not raised")
 
 
-expect("generator", [
+expect("stadalone generator", [
     "test_wrapped_iterable_input('foo')",
 ])
 @parameterized(lambda: iter(["foo"]))
