@@ -233,6 +233,13 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
 
+*Note*: py.test 4 is `not yet supported`__ (but coming!), and py.test 2 under
+Python 3 `does not appear to work`__. Please comment on the related issues if
+you are affected.
+
+__ https://github.com/wolever/parameterized/issues/34
+__ https://github.com/wolever/parameterized/issues/71
+
 Dependencies
 ------------
 
