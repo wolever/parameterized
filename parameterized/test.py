@@ -184,6 +184,11 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
                              (foo, bar, mock_umask._mock_name,
                               mock_fdopen._mock_name))
 
+    @parameterized.expand([(42,)])
+    @mock.patch("os.umask", new=lambda x: x)
+    def test_one_function_patch_decorator_with_new(foo, mock_umask):
+        raise ValueError()
+
 
 class TestParameterizedExpandWithNoMockPatchForClassNoExpand(object):
     expect("generator", [
