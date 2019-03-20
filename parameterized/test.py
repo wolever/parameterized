@@ -118,12 +118,9 @@ class TestParameterizedExpandWithMockPatchForClass(TestCase):
                               mock_getpid._mock_name))
 
     expect([
-        "test_multiple_function_patch_decorator"
-        "(42, 51, 'umask', 'fdopen', 'getpid')",
-        "test_multiple_function_patch_decorator"
-        "('foo0', 'bar0', 'umask', 'fdopen', 'getpid')",
-        "test_multiple_function_patch_decorator"
-        "('foo1', 'bar1', 'umask', 'fdopen', 'getpid')",
+        "test_multiple_function_patch_decorator(42, 51, 'umask', 'fdopen', 'getpid')",
+        "test_multiple_function_patch_decorator('foo0', 'bar0', 'umask', 'fdopen', 'getpid')",
+        "test_multiple_function_patch_decorator('foo1', 'bar1', 'umask', 'fdopen', 'getpid')",
     ])
 
     @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
@@ -186,7 +183,7 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
 
     @parameterized.expand([(42,)])
     @mock.patch("os.umask", new=lambda x: x)
-    def test_one_function_patch_decorator_with_new(foo, mock_umask):
+    def test_one_function_patch_decorator_with_new(self, foo):
         raise ValueError()
 
 

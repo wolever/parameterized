@@ -63,26 +63,6 @@ _param = namedtuple("param", "args kwargs")
 def skip_on_empty_helper(*a, **kw):
     raise SkipTest("parameterized input is empty")
 
-def reapply_patches_if_need(func):
-
-    def dummy_wrapper(orgfunc):
-        @wraps(orgfunc)
-        def dummy_func(*args, **kwargs):
-            return orgfunc(*args, **kwargs)
-        return dummy_func
-
-    if hasattr(func, 'patchings'):
-        func = dummy_wrapper(func)
-        tmp_patchings = func.patchings
-        delattr(func, 'patchings')
-        for patch_obj in tmp_patchings:
-            func = patch_obj.decorate_callable(func)
-    return func
-
-def delete_patches_if_need(func):
-    if hasattr(func, 'patchings'):
-        func.patchings[:] = []
-
 
 class param(_param):
     """ Represents a single parameter to a test case.
@@ -496,39 +476,57 @@ class parameterized(object):
             digits = len(str(len(paramters) - 1))
             for num, p in enumerate(paramters):
                 name = name_func(f, "{num:0>{digits}}".format(digits=digits, num=num), p)
-                # If the original function has patches applied by 'mock.patch',
-                # re-construct all patches on the just former decoration layer
-                # of param_as_standalone_func so as not to share
-                # patch objects between new functions
-                nf = reapply_patches_if_need(f)
-                frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
+                frame_locals[name] = cls.param_as_standalone_func(p, f, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)
 
-            # Delete original patches to prevent new function from evaluating
-            # original patching object as well as re-constructed patches.
-            delete_patches_if_need(f)
+            if hasattr(f, 'patchings'):
+                import mock
+                # There's a "bug" in mock where it will crash if an exception
+                # is raised in a function that has "patchings" but that
+                # "patchings" list is empty. Normally this would never happen,
+                # but it does for us, because we've moved the patchings
+                # from the inner (wrapped) function to the outer (expanded)
+                # function. Work around this by adding a dummy patch.
+                f.patchings[:] = [
+                    mock.patch("os.__parameterized_mock_patch_helper__", new=None, create=True),
+                ]
 
             f.__test__ = False
         return parameterized_expand_wrapper
 
     @classmethod
     def param_as_standalone_func(cls, p, func, name):
+        inner_func = func
         @wraps(func)
         def standalone_func(*a):
-            return func(*(a + p.args), **p.kwargs)
+            return inner_func(*(a + p.args), **p.kwargs)
         standalone_func.__name__ = name
+
+        if hasattr(func, 'patchings'):
+            # This is some disgusting code, but regrettably necessary for
+            # legacy reasons. Basically, because of the way mock support was
+            # originally implemented, there's an assumption that arguments
+            # will have the order:
+            # 1. params
+            # 2. method mocks
+            # 3. class mocks
+            # And the only way to ensure this order is for:
+            # 1. The mock patching to happen in the "inner" function
+            # 2. The outer function to share a "patches" list with the inner
+            #    function (so the class-level patch decorator will append to
+            #    the outer function's patch list, but it will be applied in
+            #    the inner function)
+            def mock_patch_helper_inner_func(*a, **kw):
+                return func(*a, **kw)
+            inner_func = mock_patch_helper_inner_func
+            for patching in func.patchings:
+                inner_func = patching.decorate_callable(inner_func)
+            standalone_func.patchings = inner_func.patchings
 
         # place_as is used by py.test to determine what source file should be
         # used for this test.
         standalone_func.place_as = func
 
-        # Remove __wrapped__ because py.test will try to look at __wrapped__
-        # to determine which parameters should be used with this test case,
-        # and obviously we don't need it to do any parameterization.
-        try:
-            del standalone_func.__wrapped__
-        except AttributeError:
-            pass
         return standalone_func
 
     @classmethod
