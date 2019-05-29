@@ -44,7 +44,10 @@ else:
     def make_method(func, instance, type):
         return MethodType(func, instance, type)
 
+
 CompatArgSpec = namedtuple("CompatArgSpec", "args varargs keywords defaults")
+
+
 def getargspec(func):
     if PY2:
         return CompatArgSpec(*inspect.getargspec(func))
@@ -58,10 +61,13 @@ def getargspec(func):
         ) %(func, ))
     return CompatArgSpec(*args[:4])
 
+
 _param = namedtuple("param", "args kwargs")
+
 
 def skip_on_empty_helper(*a, **kw):
     raise SkipTest("parameterized input is empty")
+
 
 def reapply_patches_if_need(func):
 
@@ -78,6 +84,7 @@ def reapply_patches_if_need(func):
         for patch_obj in tmp_patchings:
             func = patch_obj.decorate_callable(func)
     return func
+
 
 def delete_patches_if_need(func):
     if hasattr(func, 'patchings'):
@@ -217,6 +224,7 @@ def parameterized_argument_value_pairs(func, p):
 
     return result
 
+
 def short_repr(x, n=64):
     """ A shortened repr of ``x`` which is guaranteed to be ``unicode``::
 
@@ -235,6 +243,7 @@ def short_repr(x, n=64):
     if len(x_repr) > n:
         x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
     return x_repr
+
 
 def default_doc_func(func, num, p):
     if func.__doc__ is None:
@@ -256,9 +265,11 @@ def default_doc_func(func, num, p):
     args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
     return "".join([first.rstrip(), args, suffix, nl, rest])
 
+
 def default_name_func(func, num, p):
     base_name = func.__name__
     name_suffix = "_%s" %(num, )
+
     if len(p.args) > 0 and isinstance(p.args[0], string_types):
         name_suffix += "_" + parameterized.to_safe_name(p.args[0])
     return base_name + name_suffix
@@ -271,6 +282,7 @@ _test_runner_aliases = {
     "_pytest": "pytest",
 }
 
+
 def set_test_runner(name):
     global _test_runner_override
     if name not in _test_runners:
@@ -279,6 +291,7 @@ def set_test_runner(name):
             %(name, ", ".join(_test_runners)),
         )
     _test_runner_override = name
+
 
 def detect_runner():
     """ Guess which test runner we're using by traversing the stack and looking
@@ -536,7 +549,7 @@ class parameterized(object):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
 
 
-def parameterized_class(attrs, input_values=None):
+def parameterized_class(attrs, input_values=None, classname_func=None):
     """ Parameterizes a test class by setting attributes on the class.
 
         Can be used in two ways:
@@ -569,26 +582,35 @@ def parameterized_class(attrs, input_values=None):
         [dict(zip(attrs, vals)) for vals in input_values]
     )
 
+    classname_func = classname_func or default_classname_func
+
     def decorator(base_class):
         test_class_module = sys.modules[base_class.__module__].__dict__
         for idx, input_dict in enumerate(input_dicts):
             test_class_dict = dict(base_class.__dict__)
             test_class_dict.update(input_dict)
 
-            name_suffix = input_values and input_values[idx]
-            if isinstance(name_suffix, (list, tuple)) and len(input_values) > 0:
-                name_suffix = name_suffix[0]
-            name_suffix = (
-                "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
-                ""
-            )
-
-            name = "%s_%s%s" %(
-                base_class.__name__,
-                idx,
-                name_suffix,
-            )
+            name = classname_func(base_class, idx, input_dicts)
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
 
     return decorator
+
+
+def default_classname_func(cls, num, p):
+
+    name_suffix = p and p[num]
+    if isinstance(name_suffix, (list, tuple)) and len(p) > 0:
+        name_suffix = name_suffix[0]
+    name_suffix = (
+        "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
+        ""
+    )
+
+    name = "%s_%s%s" %(
+        cls.__name__,
+        num,
+        name_suffix,
+    )
+
+    return name
