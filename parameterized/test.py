@@ -252,7 +252,8 @@ class TestParameterizedExpandDocstring(TestCase):
         f_locals = stack[3][0].f_locals
         test_method = (
             f_locals.get("testMethod") or # Py27
-            f_locals.get("function") # Py33
+            f_locals.get("function") or # Py33
+            f_locals.get("method") # Py38
         )
         if test_method is None:
             raise AssertionError("uh oh, unittest changed a local variable name")
