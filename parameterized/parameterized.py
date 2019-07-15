@@ -482,9 +482,9 @@ class parameterized(object):
             frame = stack[1]
             frame_locals = frame[0].f_locals
 
-            paramters = cls.input_as_callable(input)()
+            parameters = cls.input_as_callable(input)()
 
-            if not paramters:
+            if not parameters:
                 if not skip_on_empty:
                     raise ValueError(
                         "Parameters iterable is empty (hint: use "
@@ -493,8 +493,8 @@ class parameterized(object):
                     )
                 return wraps(f)(lambda: skip_on_empty_helper())
 
-            digits = len(str(len(paramters) - 1))
-            for num, p in enumerate(paramters):
+            digits = len(str(len(parameters) - 1))
+            for num, p in enumerate(parameters):
                 name = name_func(f, "{num:0>{digits}}".format(digits=digits, num=num), p)
                 # If the original function has patches applied by 'mock.patch',
                 # re-construct all patches on the just former decoration layer
