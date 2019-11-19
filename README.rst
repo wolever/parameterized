@@ -555,7 +555,7 @@ trailing comma: ``(foo, )``)
 
 
 Using with ``@mock.patch``
-.........................
+..........................
 
 ``parameterized`` can be used with ``mock.patch``, but the argument ordering
 can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
