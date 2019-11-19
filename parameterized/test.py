@@ -481,12 +481,34 @@ class TestParameterizedClass(TestCase):
 ])
 class TestParameterizedClassDict(TestCase):
     expect([
+        "TestParameterizedClassDict_0:setUp(1, 0)",
+        "TestParameterizedClassDict_0:tearDown(1, 0)",
         "TestParameterizedClassDict_0:test_method(1, 0)",
         "TestParameterizedClassDict_1:test_method(0, 1)",
+        "TestParameterizedClassDict_1:setUp(0, 1)",
+        "TestParameterizedClassDict_1:tearDown(0, 1)",
     ])
 
     foo = 0
     bar = 0
+
+    def setUp(self):
+        # Ensure that super() works (issue #73)
+        super(TestParameterizedClassDict, self).setUp()
+        missing_tests.remove("%s:setUp(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
+
+    def tearDown(self):
+        # Ensure that super() works (issue #73)
+        super(TestParameterizedClassDict, self).tearDown()
+        missing_tests.remove("%s:tearDown(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
 
     def test_method(self):
         missing_tests.remove("%s:test_method(%r, %r)" %(
