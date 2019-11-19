@@ -1,3 +1,6 @@
+0.7.1 (2019-11-19)
+    * Fix #73: calling `setUp` and `tearDown` in parameterized classes
+
 0.7.0 (2019-02-05)
     * Added parameterized_class feature, for parameterizing entire test
       classes (many thanks to @TobyLL for their suggestions and help testing!)
