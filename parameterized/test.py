@@ -166,12 +166,9 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
                              (foo, mock_umask._mock_name))
 
     expect([
-        "test_multiple_function_patch_decorator"
-        "(42, 51, 'umask', 'fdopen')",
-        "test_multiple_function_patch_decorator"
-        "('foo0', 'bar0', 'umask', 'fdopen')",
-        "test_multiple_function_patch_decorator"
-        "('foo1', 'bar1', 'umask', 'fdopen')",
+        "test_multiple_function_patch_decorator(42, 51, 'umask', 'fdopen')",
+        "test_multiple_function_patch_decorator('foo0', 'bar0', 'umask', 'fdopen')",
+        "test_multiple_function_patch_decorator('foo1', 'bar1', 'umask', 'fdopen')",
     ])
 
     @parameterized.expand([(42, 51), ("foo0", "bar0"), param("foo1", "bar1")])
