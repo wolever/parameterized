@@ -14,7 +14,7 @@ except IOError:
 
 setup(
     name="parameterized",
-    version="0.7.0",
+    version="0.7.1",
     url="https://github.com/wolever/parameterized",
     license="FreeBSD",
     author="David Wolever",
