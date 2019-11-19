@@ -593,7 +593,7 @@ def parameterized_class(attrs, input_values=None):
 
         # We need to leave the base class in place (see issue #73), but if we
         # leave the test_ methods in place, the test runner will try to pick
-        # them up and run them… which doesn't make sense, since no parameters
+        # them up and run them... which doesn't make sense, since no parameters
         # will have been applied.
         # Address this by iterating over the base class and remove all test
         # methods.
