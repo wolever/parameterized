@@ -174,7 +174,7 @@ Installation
 Compatibility
 -------------
 
-`Yes`__.
+`Yes`__ (mostly).
 
 __ https://travis-ci.org/wolever/parameterized
 
@@ -190,7 +190,9 @@ __ https://travis-ci.org/wolever/parameterized
      - Py3.6
      - Py3.7
      - PyPy
+     - ``mock.patch``
    * - nose
+     - yes
      - yes
      - yes
      - yes
@@ -206,7 +208,17 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
-   * - py.test
+     - yes
+   * - py.test 2
+     - yes
+     - yes
+     - no*
+     - no*
+     - no*
+     - no*
+     - yes
+     - yes
+   * - py.test 3
      - yes
      - yes
      - yes
@@ -214,8 +226,28 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
+   * - py.test 4
+     - no**
+     - no**
+     - no**
+     - no**
+     - no**
+     - no**
+     - no**
+     - no**
+   * - py.test fixtures
+     - no†
+     - no†
+     - no†
+     - no†
+     - no†
+     - no†
+     - no†
+     - no†
    * - | unittest
        | (``@parameterized.expand``)
+     - yes
      - yes
      - yes
      - yes
@@ -232,13 +264,17 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
 
-*Note*: py.test 4 is `not yet supported`__ (but coming!), and py.test 2 under
-Python 3 `does not appear to work`__. Please comment on the related issues if
-you are affected.
+\*: py.test 2 does `does not appear to work (#71)`__ under Python 3. Please comment on the related issues if you are affected.
 
-__ https://github.com/wolever/parameterized/issues/34
+\*\*: py.test 4 is not yet supported (but coming!) in `issue #34`__
+
+†: py.test fixture support is documented in `issue #81`__
+
 __ https://github.com/wolever/parameterized/issues/71
+__ https://github.com/wolever/parameterized/issues/34
+__ https://github.com/wolever/parameterized/issues/81
 
 Dependencies
 ------------
