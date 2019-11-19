@@ -190,7 +190,7 @@ __ https://travis-ci.org/wolever/parameterized
      - Py3.6
      - Py3.7
      - PyPy
-     - ``mock.patch``
+     - ``@mock.patch``
    * - nose
      - yes
      - yes
@@ -554,7 +554,7 @@ helper:
 trailing comma: ``(foo, )``)
 
 
-Using with ``mock.patch``
+Using with ``@mock.patch``
 .........................
 
 ``parameterized`` can be used with ``mock.patch``, but the argument ordering
