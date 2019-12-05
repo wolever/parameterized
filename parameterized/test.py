@@ -516,3 +516,35 @@ class TestParameterizedClassDict(TestCase):
             self.foo,
             self.bar,
         ))
+
+
+class TestMixin:
+    def test_method2(self):
+        missing_tests.remove("%s:test_method2(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
+
+
+@parameterized_class([
+    {"foo": 1},
+    {"bar": 1},
+])
+class TestParameterizedClassMixin(TestCase, TestMixin):
+    expect([
+        "TestParameterizedClassMixin_0:test_method(1, 0)",
+        "TestParameterizedClassMixin_1:test_method(0, 1)",
+        "TestParameterizedClassMixin_0:test_method2(1, 0)",
+        "TestParameterizedClassMixin_1:test_method2(0, 1)",
+    ])
+
+    foo = 0
+    bar = 0
+
+    def test_method(self):
+        missing_tests.remove("%s:test_method(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
