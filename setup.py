@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import io
 import os
 import sys
 
@@ -8,7 +9,7 @@ from setuptools import setup, find_packages
 os.chdir(os.path.dirname(sys.argv[0]) or ".")
 
 try:
-    long_description = open("README.rst", "U").read()
+    long_description = io.open("README.rst", "U", encoding="utf-8").read()
 except IOError:
     long_description = "See https://github.com/wolever/parameterized"
 
