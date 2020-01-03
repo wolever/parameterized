@@ -237,14 +237,14 @@ __ https://travis-ci.org/wolever/parameterized
      - no**
      - no**
    * - py.test fixtures
-     - no†
-     - no†
-     - no†
-     - no†
-     - no†
-     - no†
-     - no†
-     - no†
+     - no***
+     - no***
+     - no***
+     - no***
+     - no***
+     - no***
+     - no***
+     - no***
    * - | unittest
        | (``@parameterized.expand``)
      - yes
@@ -270,7 +270,7 @@ __ https://travis-ci.org/wolever/parameterized
 
 \*\*: py.test 4 is not yet supported (but coming!) in `issue #34`__
 
-†: py.test fixture support is documented in `issue #81`__
+\*\*\*: py.test fixture support is documented in `issue #81`__
 
 __ https://github.com/wolever/parameterized/issues/71
 __ https://github.com/wolever/parameterized/issues/34
