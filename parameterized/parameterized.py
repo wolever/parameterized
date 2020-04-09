@@ -575,19 +575,23 @@ def parameterized_class(attrs, input_values=None):
             test_class_dict = dict(base_class.__dict__)
             test_class_dict.update(input_dict)
 
-            name_suffix = input_values and input_values[idx]
-            if isinstance(name_suffix, (list, tuple)) and len(input_values) > 0:
-                name_suffix = name_suffix[0]
-            name_suffix = (
-                "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
-                ""
-            )
+            name_class_func = test_class_dict.get('__classname_func__')
+            if name_class_func is not None:
+                name = name_class_func(base_class, idx, input_dict)
+            else:
+                name_suffix = input_values and input_values[idx]
+                if isinstance(name_suffix, (list, tuple)) and len(input_values) > 0:
+                    name_suffix = name_suffix[0]
+                name_suffix = (
+                    "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
+                    ""
+                )
 
-            name = "%s_%s%s" %(
-                base_class.__name__,
-                idx,
-                name_suffix,
-            )
+                name = "%s_%s%s" %(
+                    base_class.__name__,
+                    idx,
+                    name_suffix,
+                )
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
 
