@@ -188,9 +188,13 @@ __ https://travis-ci.org/wolever/parameterized
      - Py3.5
      - Py3.6
      - Py3.7
+     - Py3.8
+     - Py3.9
      - PyPy
      - ``@mock.patch``
    * - nose
+     - yes
+     - yes
      - yes
      - yes
      - yes
@@ -208,6 +212,8 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
+     - yes
    * - py.test 2
      - yes
      - yes
@@ -217,7 +223,11 @@ __ https://travis-ci.org/wolever/parameterized
      - no*
      - yes
      - yes
+     - yes
+     - yes
    * - py.test 3
+     - yes
+     - yes
      - yes
      - yes
      - yes
@@ -235,7 +245,11 @@ __ https://travis-ci.org/wolever/parameterized
      - no**
      - no**
      - no**
+     - no**
+     - no**
    * - py.test fixtures
+     - no†
+     - no†
      - no†
      - no†
      - no†
@@ -254,8 +268,12 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
+     - yes
    * - | unittest2
        | (``@parameterized.expand``)
+     - yes
+     - yes
      - yes
      - yes
      - yes
