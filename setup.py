@@ -26,5 +26,10 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     packages=find_packages(),
+    extras_require={
+        'dev': [
+            'jinja2',
+        ]
+    },
     long_description=long_description,
 )
