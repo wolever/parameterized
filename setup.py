@@ -8,13 +8,13 @@ from setuptools import setup, find_packages
 os.chdir(os.path.dirname(sys.argv[0]) or ".")
 
 try:
-    long_description = open("README.rst", "U").read()
+    long_description = open("README.rst").read()
 except IOError:
     long_description = "See https://github.com/wolever/parameterized"
 
 setup(
     name="parameterized",
-    version="0.7.1",
+    version="0.7.2",
     url="https://github.com/wolever/parameterized",
     license="FreeBSD",
     author="David Wolever",
@@ -26,5 +26,10 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     packages=find_packages(),
+    extras_require={
+        'dev': [
+            'jinja2',
+        ]
+    },
     long_description=long_description,
 )

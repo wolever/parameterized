@@ -1,3 +1,7 @@
+0.7.2 (2020-04-12)
+    * Add `@parameterized_class` name function callback support (thanks
+      @duncwebb et al; https://github.com/wolever/parameterized/pull/74)
+
 0.7.1 (2019-11-19)
     * Fix #73: calling `setUp` and `tearDown` in parameterized classes
 

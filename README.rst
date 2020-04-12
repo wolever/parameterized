@@ -1,15 +1,14 @@
 Parameterized testing with any Python test framework
 ====================================================
 
-|pypi| |travis|
-
-.. |pypi| image:: https://img.shields.io/pypi/v/parameterized.svg
+.. image:: https://img.shields.io/pypi/v/parameterized.svg
     :alt: PyPI
     :target: https://pypi.org/project/parameterized/
 
-.. |travis| image:: https://travis-ci.org/wolever/parameterized.svg?branch=master
-    :alt: Travis CI
-    :target: https://travis-ci.org/wolever/parameterized
+.. image:: https://circleci.com/gh/wolever/parameterized.svg?style=svg
+    :alt: Circle CI
+    :target: https://circleci.com/gh/wolever/parameterized
+
 
 Parameterized testing in Python sucks.
 
@@ -189,9 +188,13 @@ __ https://travis-ci.org/wolever/parameterized
      - Py3.5
      - Py3.6
      - Py3.7
+     - Py3.8
+     - Py3.9
      - PyPy
      - ``@mock.patch``
    * - nose
+     - yes
+     - yes
      - yes
      - yes
      - yes
@@ -209,6 +212,8 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
+     - yes
    * - py.test 2
      - yes
      - yes
@@ -218,7 +223,11 @@ __ https://travis-ci.org/wolever/parameterized
      - no*
      - yes
      - yes
+     - yes
+     - yes
    * - py.test 3
+     - yes
+     - yes
      - yes
      - yes
      - yes
@@ -236,7 +245,11 @@ __ https://travis-ci.org/wolever/parameterized
      - no**
      - no**
      - no**
+     - no**
+     - no**
    * - py.test fixtures
+     - no†
+     - no†
      - no†
      - no†
      - no†
@@ -255,8 +268,12 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
+     - yes
+     - yes
    * - | unittest2
        | (``@parameterized.expand``)
+     - yes
+     - yes
      - yes
      - yes
      - yes
@@ -555,7 +572,7 @@ trailing comma: ``(foo, )``)
 
 
 Using with ``@mock.patch``
-.........................
+..........................
 
 ``parameterized`` can be used with ``mock.patch``, but the argument ordering
 can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
