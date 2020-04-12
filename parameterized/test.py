@@ -367,6 +367,8 @@ def test_helpful_error_on_non_iterable_input():
 
 def tearDownModule():
     missing = sorted(list(missing_tests))
+    print("tearDownModule called:", missing)
+    from nose.tools import set_trace as st; st.__dict__.get("off") or st() #BREAK
     assert_equal(missing, [])
 
 def test_old_style_classes():
@@ -565,9 +567,11 @@ class TestParameterizedClassDict(TestCase):
         ))
 
 
-class TestMixin:
-    def test_method2(self):
-        missing_tests.remove("%s:test_method2(%r, %r)" %(
+class MixinWithTestMethod(object):
+    def test_method_from_mixin(self):
+        if type(self) == TestParameterizedClassWithMixin:
+            return
+        missing_tests.remove("%s:test_method_from_mixin(%r, %r)" %(
             self.__class__.__name__,
             self.foo,
             self.bar,
@@ -578,12 +582,12 @@ class TestMixin:
     {"foo": 1},
     {"bar": 1},
 ])
-class TestParameterizedClassMixin(TestCase, TestMixin):
+class TestParameterizedClassWithMixin(TestCase, MixinWithTestMethod):
     expect([
-        "TestParameterizedClassMixin_0:test_method(1, 0)",
-        "TestParameterizedClassMixin_1:test_method(0, 1)",
-        "TestParameterizedClassMixin_0:test_method2(1, 0)",
-        "TestParameterizedClassMixin_1:test_method2(0, 1)",
+        "TestParameterizedClassWithMixin_0:test_method(1, 0)",
+        "TestParameterizedClassWithMixin_1:test_method(0, 1)",
+        "TestParameterizedClassWithMixin_0:test_method_from_mixin(1, 0)",
+        "TestParameterizedClassWithMixin_1:test_method_from_mixin(0, 1)",
     ])
 
     foo = 0

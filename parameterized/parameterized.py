@@ -35,6 +35,9 @@ if PY3:
         if instance is None:
             return func
         return MethodType(func, instance)
+    def class_mro(cls):
+        return tuple(cls.mro())
+
 else:
     from types import InstanceType
     lzip = zip
@@ -43,6 +46,8 @@ else:
     string_types = basestring,
     def make_method(func, instance, type):
         return MethodType(func, instance, type)
+    def class_mro(cls):
+        return cls.__mro__
 
 
 CompatArgSpec = namedtuple("CompatArgSpec", "args varargs keywords defaults")
@@ -561,7 +566,10 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
                 { "username": "bar", "access_level": 2 },
             ])
             class TestUserAccessLevel(TestCase):
-                ...
+                access_level = 1
+
+                def test_foo(self):
+                    pass
 
         2) With a tuple of attributes, then a list of tuples of values:
 
@@ -570,7 +578,46 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
                 ("bar", 2)
             ])
             class TestUserAccessLevel(TestCase):
-                ...
+                access_level = 1
+
+                def test_foo(self):
+                    pass
+
+        This is implemented under the hood by:
+
+        1. For each parameter, create a new class inheriting from the "base"
+           class (ie, the class being parameterized) and all of its
+           superclasses.
+        2. Copying all attributes named ``test_*`` defined in the "base" class
+           into each new class.
+        3. Replacing the "base" class with a copy which has all the ``test_*``
+           methods removed and does not inherit from anything (this is
+           necessary to avoid mixin methods being run on the base class; see
+           https://github.com/wolever/parameterized/pull/86)
+
+        then injecting that new class into the module's scope and removing
+        the ``test_`` attribtes from the parameterized class.
+
+        For example, ``@parameterized_class(...)`` in example (1), above,
+        is equivilent to writing::
+
+            class TestUserAccessLevel(object):
+                access_level = 1
+
+
+            class TestUserAccessLevel_0(TestUserAccessLevel, TestCase):
+                username = "foo"
+
+                def test_foo(self):
+                    pass
+
+
+            class TestUserAccessLevel_1(TestUserAccessLevel, TestCase):
+                username = "bar"
+                access_level = 2
+
+                def test_foo(self):
+                    pass
 
     """
 
@@ -586,24 +633,29 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
 
     def decorator(base_class):
         test_class_module = sys.modules[base_class.__module__].__dict__
+
+        # Replace the base class with a new base class which:
+        # 1. Has no "test_" methods, and
+        # 2. Does not inherit from anything
+        new_base_class = type(base_class.__name__, (object, ), dict(
+            (attr, val) for (attr, val)
+            in base_class.__dict__.items()
+            if not attr.startswith("test_")
+        ))
+
+        new_superclasses = (new_base_class, ) + class_mro(base_class)[1:]
+        test_methods = dict(
+            (attr, val) for (attr, val)
+            in base_class.__dict__.items()
+            if attr.startswith("test_")
+        )
         for idx, input_dict in enumerate(input_dicts):
-            test_class_dict = dict(base_class.__dict__)
+            test_class_dict = dict(test_methods)
             test_class_dict.update(input_dict)
-
             name = classname_func(base_class, idx, input_dicts)
+            test_class_module[name] = type(name, new_superclasses, test_class_dict)
 
-            test_class_module[name] = type(name, (base_class, ), test_class_dict)
-
-        # We need to leave the base class in place (see issue #73), but if we
-        # leave the test_ methods in place, the test runner will try to pick
-        # them up and run them... which doesn't make sense, since no parameters
-        # will have been applied.
-        # Address this by iterating over the base class and remove all test
-        # methods.
-        for method_name in list(base_class.__dict__):
-            if method_name.startswith("test_"):
-                delattr(base_class, method_name)
-        return base_class
+        return new_base_class
 
     return decorator
 
