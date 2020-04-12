@@ -1,3 +1,12 @@
+0.7.3 (2020-04-12)
+    * Fix some typos (thanks @LWprogramming, @jinnovation;
+      https://github.com/wolever/parameterized/pull/77,
+      https://github.com/wolever/parameterized/pull/80)
+    * Fix unicode handling in setup.py (thanks @sliwinski-milosz;
+      https://github.com/wolever/parameterized/pull/89)
+    * Fix Python 3.9 compat (thanks @vstinner;
+      https://github.com/wolever/parameterized/pull/94)
+
 0.7.2 (2020-04-12)
     * Add `@parameterized_class` name function callback support (thanks
       @duncwebb et al; https://github.com/wolever/parameterized/pull/74)
