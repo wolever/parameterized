@@ -251,6 +251,7 @@ class TestParameterizedExpandDocstring(TestCase):
             f_locals.get("testMethod") or # Py27
             f_locals.get("function") or # Py33
             f_locals.get("method") or # Py38
+            f_locals.get("testfunction") or # Py382
             None
         )
         if test_method is None:
