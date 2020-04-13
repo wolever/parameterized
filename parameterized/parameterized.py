@@ -388,7 +388,7 @@ class parameterized(object):
                     "`parameterized([], skip_on_empty=True)` to skip "
                     "this test when the input is empty)"
                 )
-            wrapper = wraps(test_func)(lambda: skip_on_empty_helper())
+            wrapper = wraps(test_func)(skip_on_empty_helper)
 
         wrapper.parameterized_input = input
         wrapper.parameterized_func = test_func
@@ -609,7 +609,6 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
 
 
 def default_classname_func(cls, num, p):
-
     name_suffix = p and p[num]
     if isinstance(name_suffix, (list, tuple)) and len(p) > 0:
         name_suffix = name_suffix[0]

@@ -1,3 +1,7 @@
+0.7.4 (2020-04-12)
+    * Fix arguments being passed to skip_on_empty_helper (thanks @gaf3;
+      https://github.com/wolever/parameterized/issues/57)
+
 0.7.3 (2020-04-12)
     * Fix some typos (thanks @LWprogramming, @jinnovation;
       https://github.com/wolever/parameterized/pull/77,
