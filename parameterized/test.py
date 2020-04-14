@@ -478,16 +478,16 @@ class TestParameterizedClass(TestCase):
         self._assertions("test_method_b")
 
 
-def custom_cls_naming_func(clsname, idx, attrs):
+def custom_cls_naming_func(base, idx, attrs):
     """
     Custom class naming function for the form of parameterized_class that
-    takes a tuple of attributes, then a list of tuples of values
-    :param clsname: The original class that the decorator specialises
-    :param idx: the test index (starts at 0)
-    :param attrs: A list of dicts of attribute values
-    :return:
+    takes a tuple of attributes, then a list of tuples of values.
+    :param base: The original class that the decorator specialises.
+    :param idx: The test index (starts at 0).
+    :param attrs: A list of dicts of attribute values, one per test.
+    :return: 
     """
-    return "%s_%s_%s_%s" % (clsname.__name__, str(attrs[idx]['a']), str(attrs[idx]['b']), str(attrs[idx]['c']))
+    return "%s_%s_%s_%s" % (base.__name__, str(attrs[idx]['a']), str(attrs[idx]['b']), str(attrs[idx]['c']))
 
 
 @parameterized_class(("a", "b", "c"), [
