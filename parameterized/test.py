@@ -447,17 +447,14 @@ def test_cases_over_10(input, expected):
 
 @parameterized_class(("a", "b", "c"), [
     ("foo", 1, 2),
-    ("bar", 3, 0),
     (0, 1, 2),
 ])
 class TestParameterizedClass(TestCase):
     expect([
-        "TestParameterizedClass_0:test_method_a('foo', 1, 2)",
-        "TestParameterizedClass_0:test_method_b('foo', 1, 2)",
-        "TestParameterizedClass_1:test_method_a('bar', 3, 0)",
-        "TestParameterizedClass_1:test_method_b('bar', 3, 0)",
-        "TestParameterizedClass_2:test_method_a(0, 1, 2)",
-        "TestParameterizedClass_2:test_method_b(0, 1, 2)",
+        "TestParameterizedClass_0_foo:test_method_a('foo', 1, 2)",
+        "TestParameterizedClass_0_foo:test_method_b('foo', 1, 2)",
+        "TestParameterizedClass_1:test_method_a(0, 1, 2)",
+        "TestParameterizedClass_1:test_method_b(0, 1, 2)",
     ])
 
     def _assertions(self, test_name):
@@ -478,67 +475,43 @@ class TestParameterizedClass(TestCase):
         self._assertions("test_method_b")
 
 
-def custom_cls_naming_func(clsname, idx, attrs):
-    """
-    Custom class naming function for the form of parameterized_class that
-    takes a tuple of attributes, then a list of tuples of values
-    :param clsname: The original class that the decorator specialises
-    :param idx: the test index (starts at 0)
-    :param attrs: A list of dicts of attribute values
-    :return:
-    """
-    return "%s_%s_%s_%s" % (clsname.__name__, str(attrs[idx]['a']), str(attrs[idx]['b']), str(attrs[idx]['c']))
-
-
-@parameterized_class(("a", "b", "c"), [
-    ("foo", 1, 2),
-    ("bar", 3, 0),
-    (0, 1, 2),
-], classname_func=custom_cls_naming_func)
+@parameterized_class(("a", ), [
+    (1, ),
+    (2, ),
+], classname_func=lambda cls, idx, attrs: "%s_custom_func_%s" %(cls.__name__, attrs["a"]))
 class TestNamedParameterizedClass(TestCase):
     expect([
-        "TestNamedParameterizedClass_foo_1_2:test_method_a('foo', 1, 2)",
-        "TestNamedParameterizedClass_foo_1_2:test_method_b('foo', 1, 2)",
-        "TestNamedParameterizedClass_bar_3_0:test_method_a('bar', 3, 0)",
-        "TestNamedParameterizedClass_bar_3_0:test_method_b('bar', 3, 0)",
-        "TestNamedParameterizedClass_0_1_2:test_method_a(0, 1, 2)",
-        "TestNamedParameterizedClass_0_1_2:test_method_b(0, 1, 2)",
+        "TestNamedParameterizedClass_custom_func_1:test_method(1)",
+        "TestNamedParameterizedClass_custom_func_2:test_method(2)",
     ])
 
-    def _assertions(self, test_name):
-        assert hasattr(self, "a")
-        assert_equal(self.b + self.c, 3)
-        missing_tests.remove("%s:%s(%r, %r, %r)" %(
+    def test_method(self):
+        missing_tests.remove("%s:test_method(%r)" %(
             self.__class__.__name__,
-            test_name,
             self.a,
-            self.b,
-            self.c,
         ))
-
-    def test_method_a(self):
-        self._assertions("test_method_a")
-
-    def test_method_b(self):
-        self._assertions("test_method_b")
 
 
 @parameterized_class([
-    {"foo": 1},
-    {"bar": 1},
+    {"foo": 42},
+    {"bar": "some stuff"},
+    {"bar": "other stuff", "name": "some name", "foo": 12},
 ])
 class TestParameterizedClassDict(TestCase):
     expect([
-        "TestParameterizedClassDict_0:setUp(1, 0)",
-        "TestParameterizedClassDict_0:tearDown(1, 0)",
-        "TestParameterizedClassDict_0:test_method(1, 0)",
-        "TestParameterizedClassDict_1:test_method(0, 1)",
-        "TestParameterizedClassDict_1:setUp(0, 1)",
-        "TestParameterizedClassDict_1:tearDown(0, 1)",
+        "TestParameterizedClassDict_0:setUp(42, 'empty')",
+        "TestParameterizedClassDict_0:test_method(42, 'empty')",
+        "TestParameterizedClassDict_0:tearDown(42, 'empty')",
+        "TestParameterizedClassDict_1_some_stuff:setUp(0, 'some stuff')",
+        "TestParameterizedClassDict_1_some_stuff:test_method(0, 'some stuff')",
+        "TestParameterizedClassDict_1_some_stuff:tearDown(0, 'some stuff')",
+        "TestParameterizedClassDict_2_some_name:setUp(12, 'other stuff')",
+        "TestParameterizedClassDict_2_some_name:test_method(12, 'other stuff')",
+        "TestParameterizedClassDict_2_some_name:tearDown(12, 'other stuff')",
     ])
 
     foo = 0
-    bar = 0
+    bar = 'empty'
 
     def setUp(self):
         # Ensure that super() works (issue #73)
@@ -557,40 +530,6 @@ class TestParameterizedClassDict(TestCase):
             self.foo,
             self.bar,
         ))
-
-    def test_method(self):
-        missing_tests.remove("%s:test_method(%r, %r)" %(
-            self.__class__.__name__,
-            self.foo,
-            self.bar,
-        ))
-
-
-def custom_cls_naming_dict_func(clsname, idx, attrs):
-    """
-    Custom class naming function for the form of parameterized_class that
-    takes a list of dictionaries containing attributes to override.
-    :param clsname: The original class that the decorator specialises
-    :param idx: the test index (starts at 0)
-    :param attrs: A list of dicts of attribute values
-    :return:
-    """
-    return "%s_%s_%s" % (clsname.__name__, str(attrs[idx].get('foo', 0)), str(attrs[idx].get('bar', 0)))
-
-
-@parameterized_class([
-    {"foo": 1},
-    {"bar": 1},
-], classname_func=custom_cls_naming_dict_func
-)
-class TestNamedParameterizedClassDict(TestCase):
-    expect([
-        "TestNamedParameterizedClassDict_1_0:test_method(1, 0)",
-        "TestNamedParameterizedClassDict_0_1:test_method(0, 1)",
-    ])
-
-    foo = 0
-    bar = 0
 
     def test_method(self):
         missing_tests.remove("%s:test_method(%r, %r)" %(

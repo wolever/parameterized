@@ -62,9 +62,6 @@ def getargspec(func):
     return CompatArgSpec(*args[:4])
 
 
-_param = namedtuple("param", "args kwargs")
-
-
 def skip_on_empty_helper(*a, **kw):
     raise SkipTest("parameterized input is empty")
 
@@ -90,6 +87,8 @@ def delete_patches_if_need(func):
     if hasattr(func, 'patchings'):
         func.patchings[:] = []
 
+
+_param = namedtuple("param", "args kwargs")
 
 class param(_param):
     """ Represents a single parameter to a test case.
@@ -590,7 +589,7 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
             test_class_dict = dict(base_class.__dict__)
             test_class_dict.update(input_dict)
 
-            name = classname_func(base_class, idx, input_dicts)
+            name = classname_func(base_class, idx, input_dict)
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
 
@@ -608,19 +607,24 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
     return decorator
 
 
-def default_classname_func(cls, num, p):
-    name_suffix = p and p[num]
-    if isinstance(name_suffix, (list, tuple)) and len(p) > 0:
-        name_suffix = name_suffix[0]
-    name_suffix = (
-        "_%s" %(name_suffix, ) if isinstance(name_suffix, string_types) else
-        ""
-    )
+def get_classname_suffix(params_dict):
+    if "name" in params_dict:
+        return parameterized.to_safe_name(params_dict["name"])
 
-    name = "%s_%s%s" %(
+    params_vals = (
+        params_dict.values() if PY3 else
+        (v for (_, v) in sorted(params_dict.items()))
+    )
+    return parameterized.to_safe_name(next((
+        v for v in params_vals
+        if isinstance(v, string_types)
+    ), ""))
+
+
+def default_classname_func(cls, num, params_dict):
+    suffix = get_classname_suffix(params_dict)
+    return "%s_%s%s" %(
         cls.__name__,
         num,
-        name_suffix,
+        suffix and "_" + suffix,
     )
-
-    return name
