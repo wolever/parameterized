@@ -616,7 +616,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
     return decorator
 
 
-def get_classname_suffix(params_dict):
+def get_class_name_suffix(params_dict):
     if "name" in params_dict:
         return parameterized.to_safe_name(params_dict["name"])
 
@@ -631,7 +631,7 @@ def get_classname_suffix(params_dict):
 
 
 def default_class_name_func(cls, num, params_dict):
-    suffix = get_classname_suffix(params_dict)
+    suffix = get_class_name_suffix(params_dict)
     return "%s_%s%s" %(
         cls.__name__,
         num,
