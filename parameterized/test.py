@@ -478,7 +478,7 @@ class TestParameterizedClass(TestCase):
 @parameterized_class(("a", ), [
     (1, ),
     (2, ),
-], classname_func=lambda cls, idx, attrs: "%s_custom_func_%s" %(cls.__name__, attrs["a"]))
+], class_name_func=lambda cls, idx, attrs: "%s_custom_func_%s" %(cls.__name__, attrs["a"]))
 class TestNamedParameterizedClass(TestCase):
     expect([
         "TestNamedParameterizedClass_custom_func_1:test_method(1)",

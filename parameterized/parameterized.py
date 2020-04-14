@@ -548,7 +548,7 @@ class parameterized(object):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
 
 
-def parameterized_class(attrs, input_values=None, classname_func=None):
+def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None):
     """ Parameterizes a test class by setting attributes on the class.
 
         Can be used in two ways:
@@ -581,7 +581,16 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
         [dict(zip(attrs, vals)) for vals in input_values]
     )
 
-    classname_func = classname_func or default_classname_func
+    class_name_func = class_name_func or default_class_name_func
+    
+    if classname_func:
+        warnings.warn(
+            "classname_func= is deprecated; use class_name_func= instead. "
+            "See: https://github.com/wolever/parameterized/pull/74#issuecomment-613577057",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        class_name_func = lambda cls, idx, input: classname_func(cls, idx, input_dicts)
 
     def decorator(base_class):
         test_class_module = sys.modules[base_class.__module__].__dict__
@@ -589,7 +598,7 @@ def parameterized_class(attrs, input_values=None, classname_func=None):
             test_class_dict = dict(base_class.__dict__)
             test_class_dict.update(input_dict)
 
-            name = classname_func(base_class, idx, input_dict)
+            name = class_name_func(base_class, idx, input_dict)
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
 
@@ -621,7 +630,7 @@ def get_classname_suffix(params_dict):
     ), ""))
 
 
-def default_classname_func(cls, num, params_dict):
+def default_class_name_func(cls, num, params_dict):
     suffix = get_classname_suffix(params_dict)
     return "%s_%s%s" %(
         cls.__name__,

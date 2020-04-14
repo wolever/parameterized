@@ -1,5 +1,5 @@
 0.7.4 (?)
-    * Add ``classname_func`` option to ``@parameterized_class``
+    * Add ``class_name_func`` option to ``@parameterized_class``
     * Fix arguments being passed to skip_on_empty_helper (thanks @gaf3;
       https://github.com/wolever/parameterized/issues/57)
     * Fix tests on Python 3.8.2 (thanks @Ikke;
