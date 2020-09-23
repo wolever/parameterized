@@ -453,8 +453,10 @@ class TestParameterizedClass(TestCase):
     expect([
         "TestParameterizedClass_0_foo:test_method_a('foo', 1, 2)",
         "TestParameterizedClass_0_foo:test_method_b('foo', 1, 2)",
+        "TestParameterizedClass_0_foo:testCamelCaseMethodC('foo', 1, 2)",
         "TestParameterizedClass_1:test_method_a(0, 1, 2)",
         "TestParameterizedClass_1:test_method_b(0, 1, 2)",
+        "TestParameterizedClass_1:testCamelCaseMethodC(0, 1, 2)",
     ])
 
     def _assertions(self, test_name):
@@ -473,6 +475,9 @@ class TestParameterizedClass(TestCase):
 
     def test_method_b(self):
         self._assertions("test_method_b")
+
+    def testCamelCaseMethodC(self):
+        self._assertions("testCamelCaseMethodC")
 
 
 @parameterized_class(("a", ), [
