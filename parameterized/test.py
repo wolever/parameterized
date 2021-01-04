@@ -537,3 +537,13 @@ class TestParameterizedClassDict(TestCase):
             self.foo,
             self.bar,
         ))
+
+
+class TestUnicodeDocstring(object):
+    @parameterized.expand([
+        'value1',
+        'vålüé¡'
+    ])
+    def test_with_docstring(self, param):
+        """ Это док-стринг, содержащий не-ascii символы """
+        pass

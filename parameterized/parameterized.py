@@ -44,6 +44,13 @@ else:
     def make_method(func, instance, type):
         return MethodType(func, instance, type)
 
+def to_text(x):
+    if isinstance(x, text_type):
+        return x
+    try:
+        return text_type(x, "utf-8")
+    except UnicodeDecodeError:
+        return text_type(x, "latin1")
 
 CompatArgSpec = namedtuple("CompatArgSpec", "args varargs keywords defaults")
 
@@ -233,12 +240,7 @@ def short_repr(x, n=64):
             u"12...89"
     """
 
-    x_repr = repr(x)
-    if isinstance(x_repr, bytes_type):
-        try:
-            x_repr = text_type(x_repr, "utf-8")
-        except UnicodeDecodeError:
-            x_repr = text_type(x_repr, "latin1")
+    x_repr = to_text(repr(x))
     if len(x_repr) > n:
         x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
     return x_repr
@@ -262,7 +264,10 @@ def default_doc_func(func, num, p):
         suffix = "."
         first = first[:-1]
     args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
-    return "".join([first.rstrip(), args, suffix, nl, rest])
+    return "".join(
+        to_text(x)
+        for x in [first.rstrip(), args, suffix, nl, rest]
+    )
 
 
 def default_name_func(func, num, p):
