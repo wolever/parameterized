@@ -6,6 +6,8 @@ import sys
 
 from setuptools import setup, find_packages
 
+import parameterized
+
 os.chdir(os.path.dirname(sys.argv[0]) or ".")
 
 try:
@@ -15,7 +17,7 @@ except IOError:
 
 setup(
     name="parameterized",
-    version="0.7.4",
+    version=parameterized.__version__,
     url="https://github.com/wolever/parameterized",
     license="FreeBSD",
     author="David Wolever",
