@@ -5,6 +5,8 @@
       ``method_name.startswith("test")``. The latter is the behavior of
       the ``unittest`` module.
       (thanks @bobwalker99; https://github.com/wolever/parameterized/pull/106)
+    * Fix arguments to skip_on_empty helper (thanks @bhavyakjain;
+      https://github.com/wolever/parameterized/pull/104)
 
 0.7.5 (2021-01-04)
     * Fix crash on Python 2.7 with unicode docstrings
