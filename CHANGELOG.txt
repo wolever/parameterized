@@ -1,6 +1,10 @@
 0.7.5 (2021-01-04)
     * Fix crash on Python 2.7 with unicode docstrings
       (https://github.com/wolever/parameterized/issues/109)
+    * Replace inspect.stack() with faster inspect.currentframe()
+      (https://github.com/wolever/parameterized/issues/107)
+    * Add a __version__ string to the package
+      (https://github.com/wolever/parameterized/issues/103)
 
 0.7.4 (2020-04-14)
     * Add ``class_name_func`` option to ``@parameterized_class``
