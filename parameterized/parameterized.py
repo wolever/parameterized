@@ -495,9 +495,7 @@ class parameterized(object):
         name_func = name_func or default_name_func
 
         def parameterized_expand_wrapper(f, instance=None):
-            stack = inspect.stack()
-            frame = stack[1]
-            frame_locals = frame[0].f_locals
+            frame_locals = inspect.currentframe().f_back.f_locals
 
             parameters = cls.input_as_callable(input)()
 
