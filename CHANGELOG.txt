@@ -1,6 +1,20 @@
+0.8.0 (2021-01-04)
+    * Handle camelCase test names. This is an ever-so-slightly backwards
+      incompatible change, as the method for determining which methods are
+      test methods has changed from ``method_name.startswith("test_")`` to
+      ``method_name.startswith("test")``. The latter is the behavior of
+      the ``unittest`` module.
+      (thanks @bobwalker99; https://github.com/wolever/parameterized/pull/106)
+    * Fix arguments to skip_on_empty helper (thanks @bhavyakjain;
+      https://github.com/wolever/parameterized/pull/104)
+
 0.7.5 (2021-01-04)
     * Fix crash on Python 2.7 with unicode docstrings
       (https://github.com/wolever/parameterized/issues/109)
+    * Replace inspect.stack() with faster inspect.currentframe()
+      (https://github.com/wolever/parameterized/issues/107)
+    * Add a __version__ string to the package
+      (https://github.com/wolever/parameterized/issues/103)
 
 0.7.4 (2020-04-14)
     * Add ``class_name_func`` option to ``@parameterized_class``
