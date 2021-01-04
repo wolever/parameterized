@@ -614,7 +614,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
         # Address this by iterating over the base class and remove all test
         # methods.
         for method_name in list(base_class.__dict__):
-            if method_name.startswith("test_"):
+            if method_name.startswith("test"):
                 delattr(base_class, method_name)
         return base_class
 
