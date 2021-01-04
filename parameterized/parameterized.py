@@ -506,7 +506,7 @@ class parameterized(object):
                         "`parameterized.expand([], skip_on_empty=True)` to skip "
                         "this test when the input is empty)"
                     )
-                return wraps(f)(lambda: skip_on_empty_helper())
+                return wraps(f)(skip_on_empty_helper)
 
             digits = len(str(len(parameters) - 1))
             for num, p in enumerate(parameters):
