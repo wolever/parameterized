@@ -1,8 +1,12 @@
 Parameterized testing with any Python test framework
 ====================================================
 
-.. image:: https://img.shields.io/pypi/v/parameterized.svg
+.. image:: https://img.shields.io/pypi/v/parameterized
     :alt: PyPI
+    :target: https://pypi.org/project/parameterized/
+
+.. image:: https://img.shields.io/pypi/dm/parameterized
+    :alt: PyPI - Downloads
     :target: https://pypi.org/project/parameterized/
 
 .. image:: https://circleci.com/gh/wolever/parameterized.svg?style=svg
