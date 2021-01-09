@@ -1,3 +1,7 @@
+0.8.1 (2021-01-09)
+    * Add README and LICENSE to pypi sdist package
+      (https://github.com/wolever/parameterized/pull/114; thanks @chohner)
+
 0.8.0 (2021-01-04)
     * Handle camelCase test names. This is an ever-so-slightly backwards
       incompatible change, as the method for determining which methods are
