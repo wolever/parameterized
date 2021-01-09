@@ -40,6 +40,7 @@ def expect(skip, tests=None):
 
 test_params = [
     (42, ),
+    (42, "bar_val"),
     "foo0",
     param("foo1"),
     param("foo2", bar=42),
@@ -50,6 +51,7 @@ expect("standalone", [
     "test_naked_function('foo1', bar=None)",
     "test_naked_function('foo2', bar=42)",
     "test_naked_function(42, bar=None)",
+    "test_naked_function(42, bar='bar_val')",
 ])
 
 @parameterized(test_params)
@@ -63,6 +65,7 @@ class TestParameterized(object):
         "test_instance_method('foo1', bar=None)",
         "test_instance_method('foo2', bar=42)",
         "test_instance_method(42, bar=None)",
+        "test_instance_method(42, bar='bar_val')",
     ])
 
     @parameterized(test_params)
@@ -95,10 +98,16 @@ if not PYTEST:
             missing_tests.remove("test_setup(%s)" %(self.actual_order, ))
 
 
-def custom_naming_func(custom_tag):
+def custom_naming_func(custom_tag, kw_name):
     def custom_naming_func(testcase_func, param_num, param):
-        return testcase_func.__name__ + ('_%s_name_' % custom_tag) + str(param.args[0])
-
+        return (
+            testcase_func.__name__ +
+            '_%s_name_' %(custom_tag, ) +
+            str(param.args[0]) + 
+            # This ... is a bit messy, to properly handle the values in
+            # `test_params`, but ... it should work.
+            '_%s' %(param.args[1] if len(param.args) > 1 else param.kwargs.get(kw_name), )
+        )
     return custom_naming_func
 
 
@@ -214,6 +223,7 @@ class TestParamerizedOnTestCase(TestCase):
         "test_on_TestCase('foo1', bar=None)",
         "test_on_TestCase('foo2', bar=42)",
         "test_on_TestCase(42, bar=None)",
+        "test_on_TestCase(42, bar='bar_val')",
     ])
 
     @parameterized.expand(test_params)
@@ -221,20 +231,21 @@ class TestParamerizedOnTestCase(TestCase):
         missing_tests.remove("test_on_TestCase(%r, bar=%r)" %(foo, bar))
 
     expect([
-        "test_on_TestCase2_custom_name_42(42, bar=None)",
-        "test_on_TestCase2_custom_name_foo0('foo0', bar=None)",
-        "test_on_TestCase2_custom_name_foo1('foo1', bar=None)",
-        "test_on_TestCase2_custom_name_foo2('foo2', bar=42)",
+        "test_on_TestCase2_custom_name_42_None(42, bar=None)",
+        "test_on_TestCase2_custom_name_42_bar_val(42, bar='bar_val')",
+        "test_on_TestCase2_custom_name_foo0_None('foo0', bar=None)",
+        "test_on_TestCase2_custom_name_foo1_None('foo1', bar=None)",
+        "test_on_TestCase2_custom_name_foo2_42('foo2', bar=42)",
     ])
 
     @parameterized.expand(test_params,
-                          name_func=custom_naming_func("custom"))
+                          name_func=custom_naming_func("custom", "bar"))
     def test_on_TestCase2(self, foo, bar=None):
         stack = inspect.stack()
         frame = stack[1]
         frame_locals = frame[0].f_locals
         nose_test_method_name = frame_locals['a'][0]._testMethodName
-        expected_name = "test_on_TestCase2_custom_name_" + str(foo)
+        expected_name = "test_on_TestCase2_custom_name_" + str(foo) + "_" + str(bar)
         assert_equal(nose_test_method_name, expected_name,
                      "Test Method name '%s' did not get customized to expected: '%s'" %
                      (nose_test_method_name, expected_name))
