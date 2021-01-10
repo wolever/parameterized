@@ -469,7 +469,8 @@ class parameterized(object):
                 namespace,
                 namespace,
             )
-
+            if "xxx123" in repr(test_func):
+                import pdb; pdb.set_trace()
             return pytest.mark.parametrize(",".join(func_args_no_self), pytest_params)(namespace[wrapper_name])
 
         @wraps(test_func)

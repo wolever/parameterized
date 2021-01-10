@@ -386,6 +386,8 @@ def tearDownModule():
 def test_old_style_classes():
     if PY3:
         raise SkipTest("Py3 doesn't have old-style classes")
+    if PYTEST4:
+        raise SkipTest("We're not going to worry about old style classes with pytest 4")
     class OldStyleClass:
         @parameterized(["foo"])
         def parameterized_method(self, param):
