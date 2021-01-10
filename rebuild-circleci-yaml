@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Rebuilds the .circleci/config.yml file based on the output of ``tox --listenvs``
@@ -56,12 +56,12 @@ py_version_map = {
     "py36": "3.6",
     "py37": "3.7",
     "py38": "3.8",
-    "py39": "3.9-rc",
+    "py39": "3.9",
     "pypy": "pypy",
 }
 
 def main():
-    env_list_str = sp.check_output("tox --listenvs", shell=True).splitlines()
+    env_list_str = sp.check_output("tox --listenvs", shell=True).decode("utf-8").splitlines()
     env_list = []
     for env in env_list_str:
         if not env.strip():
