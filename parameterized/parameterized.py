@@ -26,7 +26,7 @@ except ImportError:
 
 PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
-
+PYTEST4 = pytest and pytest.__version__ >= '4.0.0'
 
 if PY3:
     # Python 3 doesn't have an InstanceType, so just use a dummy type.
@@ -384,7 +384,30 @@ class parameterized(object):
                 )
             return wraps(test_func)(skip_on_empty_helper)
 
-        if pytest and pytest.__version__ > '4.0.0':
+        if PYTEST4:
+            # pytest >= 4 compatibility is... a bit of work. Basically, the
+            # only way (I can find) of implementing parameterized testing with
+            # pytest >= 4 is through the ``@pytest.mark.parameterized``
+            # decorator. This decorator has some strange requirements around
+            # the name and number of arguments to the test function, so this
+            # wrapper works around that by:
+            # 1. Introspecting the original test function to determine the
+            #    names and default values of all arguments.
+            # 2. Creating a new function with the same arguments, but none
+            #    of them are optional::
+            #
+            #        def foo(a, b=42): ...
+            #
+            #    Becomes:
+            #
+            #        def parameterized_pytest_wrapper_foo(a, b): ...
+            #
+            # 3. Merging the ``@parameterized`` parameters with the argument
+            #    default values.
+            # 4. Generating a list of ``pytest.param(...)`` values, and passing
+            #    that into ``@pytest.mark.parameterized``.
+            # Some work also needs to be done to support the documented usage
+            # of ``mock.patch``, which also adds complexity.
             Undefined = object()
             test_func_wrapped = test_func
             test_func_real, mock_patchings = unwrap_mock_patch_func(test_func_wrapped)
@@ -415,13 +438,17 @@ class parameterized(object):
                 # Sanity check: all arguments should now be defined
                 if any(v is Undefined for v in p.values()):
                     raise ValueError(
-                        "When parameterizing function %r: no value for arguments: %s" %(
+                        "When parameterizing function %r: no value for "
+                        "arguments: %s with parameters %r "
+                        "(see: 'no value for arguments' in "
+                        "https://github.com/wolever/parameterized#faq)" %(
                             test_func,
                             ", ".join(
                                 repr(arg)
                                 for (arg, val) in p.items()
                                 if val is Undefined
                             ),
+                            i,
                         )
                     )
 
@@ -430,11 +457,11 @@ class parameterized(object):
                 ]))
 
             namespace = {
-                "__test_func": test_func_wrapped,
+                "__parameterized_original_test_func": test_func_wrapped,
             }
             wrapper_name = "parameterized_pytest_wrapper_%s" %(test_func.__name__, )
             exec(
-                "def %s(%s): return __test_func(%s)" %(
+                "def %s(%s, *__args): return __parameterized_original_test_func(%s, *__args)" %(
                     wrapper_name,
                     ",".join(func_args),
                     ",".join(func_args),

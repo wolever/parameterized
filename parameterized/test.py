@@ -6,8 +6,9 @@ from unittest import TestCase
 from nose.tools import assert_equal, assert_raises
 
 from .parameterized import (
-    PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
-    short_repr, detect_runner, parameterized_class, SkipTest,
+    PY3, PY2, PYTEST4, parameterized, param,
+    parameterized_argument_value_pairs, short_repr, detect_runner,
+    parameterized_class, SkipTest,
 )
 
 def assert_contains(haystack, needle):
@@ -146,19 +147,20 @@ class TestParameterizedExpandWithMockPatchForClass(TestCase):
                               mock_fdopen._mock_name, mock_getpid._mock_name))
 
 
-@mock.patch("os.getpid")
-class TestParameterizedExpandWithNoExpand(object):
-    expect("generator", [
-        "test_patch_class_no_expand(42, 51, 'umask', 'getpid')",
-    ])
+if not PYTEST4:
+    @mock.patch("os.getpid")
+    class TestParameterizedExpandWithNoExpand(object):
+        expect("generator", [
+            "test_patch_class_no_expand(42, 51, 'umask', 'getpid')",
+        ])
 
-    @parameterized([(42, 51)])
-    @mock.patch("os.umask")
-    def test_patch_class_no_expand(self, foo, bar, mock_umask, mock_getpid):
-        missing_tests.remove("test_patch_class_no_expand"
-                             "(%r, %r, %r, %r)" %
-                             (foo, bar, mock_umask._mock_name,
-                              mock_getpid._mock_name))
+        @parameterized([(42, 51)])
+        @mock.patch("os.umask")
+        def test_patch_class_no_expand(self, foo, bar, mock_umask, mock_getpid):
+            missing_tests.remove("test_patch_class_no_expand"
+                                 "(%r, %r, %r, %r)" %
+                                 (foo, bar, mock_umask._mock_name,
+                                  mock_getpid._mock_name))
 
 
 class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
@@ -563,3 +565,16 @@ class TestUnicodeDocstring(object):
     def test_with_docstring(self, param):
         """ Это док-стринг, содержащий не-ascii символы """
         pass
+
+if PYTEST4:
+    def test_missing_argument_error():
+        try:
+            @parameterized([
+                (1, ),
+            ])
+            def foo(a, b):
+                pass
+        except ValueError as e:
+            assert_contains(repr(e), "no value for arguments: 'b'")
+        else:
+            raise AssertionError("Expected exception not raised")
