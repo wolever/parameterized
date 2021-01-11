@@ -19,9 +19,14 @@ except ImportError:
     class SkipTest(Exception):
         pass
 
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
 PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
-
+PYTEST4 = pytest and pytest.__version__ >= '4.0.0'
 
 if PY3:
     # Python 3 doesn't have an InstanceType, so just use a dummy type.
@@ -352,6 +357,120 @@ class parameterized(object):
     def __call__(self, test_func):
         self.assert_not_in_testcase_subclass()
 
+        input = self.get_input()
+        wrapper = self._wrap_test_func(test_func, input)
+        wrapper.parameterized_input = input
+        wrapper.parameterized_func = test_func
+        test_func.__name__ = "_parameterized_original_%s" %(test_func.__name__, )
+
+        return wrapper
+
+    def _wrap_test_func(self, test_func, input):
+        """ Wraps a test function so that it will appropriately handle
+            parameterization.
+
+            In the general case, the wrapper will enumerate the input, yielding
+            test cases.
+
+            In the case of pytest4, the wrapper will use
+            ``@pytest.mark.parametrize`` to parameterize the test function. """
+
+        if not input:
+            if not self.skip_on_empty:
+                raise ValueError(
+                    "Parameters iterable is empty (hint: use "
+                    "`parameterized([], skip_on_empty=True)` to skip "
+                    "this test when the input is empty)"
+                )
+            return wraps(test_func)(skip_on_empty_helper)
+
+        if PYTEST4:
+            # pytest >= 4 compatibility is... a bit of work. Basically, the
+            # only way (I can find) of implementing parameterized testing with
+            # pytest >= 4 is through the ``@pytest.mark.parameterized``
+            # decorator. This decorator has some strange requirements around
+            # the name and number of arguments to the test function, so this
+            # wrapper works around that by:
+            # 1. Introspecting the original test function to determine the
+            #    names and default values of all arguments.
+            # 2. Creating a new function with the same arguments, but none
+            #    of them are optional::
+            #
+            #        def foo(a, b=42): ...
+            #
+            #    Becomes:
+            #
+            #        def parameterized_pytest_wrapper_foo(a, b): ...
+            #
+            # 3. Merging the ``@parameterized`` parameters with the argument
+            #    default values.
+            # 4. Generating a list of ``pytest.param(...)`` values, and passing
+            #    that into ``@pytest.mark.parameterized``.
+            # Some work also needs to be done to support the documented usage
+            # of ``mock.patch``, which also adds complexity.
+            Undefined = object()
+            test_func_wrapped = test_func
+            test_func_real, mock_patchings = unwrap_mock_patch_func(test_func_wrapped)
+            func_argspec = getargspec(test_func_real)
+
+            func_args = func_argspec.args
+            if mock_patchings:
+                func_args = func_args[:-len(mock_patchings)]
+
+            func_args_no_self = func_args
+            if func_args_no_self[:1] == ["self"]:
+                func_args_no_self = func_args_no_self[1:]
+
+            args_with_default = dict(
+                (arg, Undefined)
+                for arg in func_args_no_self
+            )
+            for (arg, default) in zip(reversed(func_args_no_self), reversed(func_argspec.defaults or [])):
+                args_with_default[arg] = default
+
+            pytest_params = []
+            for i in input:
+                p = dict(args_with_default)
+                for (arg, val) in zip(func_args_no_self, i.args):
+                    p[arg] = val
+                p.update(i.kwargs)
+
+                # Sanity check: all arguments should now be defined
+                if any(v is Undefined for v in p.values()):
+                    raise ValueError(
+                        "When parameterizing function %r: no value for "
+                        "arguments: %s with parameters %r "
+                        "(see: 'no value for arguments' in "
+                        "https://github.com/wolever/parameterized#faq)" %(
+                            test_func,
+                            ", ".join(
+                                repr(arg)
+                                for (arg, val) in p.items()
+                                if val is Undefined
+                            ),
+                            i,
+                        )
+                    )
+
+                pytest_params.append(pytest.param(*[
+                    p.get(arg) for arg in func_args_no_self
+                ]))
+
+            namespace = {
+                "__parameterized_original_test_func": test_func_wrapped,
+            }
+            wrapper_name = "parameterized_pytest_wrapper_%s" %(test_func.__name__, )
+            exec(
+                "def %s(%s, *__args): return __parameterized_original_test_func(%s, *__args)" %(
+                    wrapper_name,
+                    ",".join(func_args),
+                    ",".join(func_args),
+                ),
+                namespace,
+                namespace,
+            )
+            return pytest.mark.parametrize(",".join(func_args_no_self), pytest_params)(namespace[wrapper_name])
+
         @wraps(test_func)
         def wrapper(test_self=None):
             test_cls = test_self and type(test_self)
@@ -366,7 +485,7 @@ class parameterized(object):
                     ) %(test_self, ))
 
             original_doc = wrapper.__doc__
-            for num, args in enumerate(wrapper.parameterized_input):
+            for num, args in enumerate(input):
                 p = param.from_decorator(args)
                 unbound_func, nose_tuple = self.param_as_nose_tuple(test_self, test_func, num, p)
                 try:
@@ -383,21 +502,6 @@ class parameterized(object):
                     if test_self is not None:
                         delattr(test_cls, test_func.__name__)
                     wrapper.__doc__ = original_doc
-
-        input = self.get_input()
-        if not input:
-            if not self.skip_on_empty:
-                raise ValueError(
-                    "Parameters iterable is empty (hint: use "
-                    "`parameterized([], skip_on_empty=True)` to skip "
-                    "this test when the input is empty)"
-                )
-            wrapper = wraps(test_func)(skip_on_empty_helper)
-
-        wrapper.parameterized_input = input
-        wrapper.parameterized_func = test_func
-        test_func.__name__ = "_parameterized_original_%s" %(test_func.__name__, )
-
         return wrapper
 
     def param_as_nose_tuple(self, test_self, func, num, p):
@@ -618,6 +722,11 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
 
     return decorator
 
+def unwrap_mock_patch_func(f):
+    if not hasattr(f, "patchings"):
+        return (f, [])
+    real_func, patchings = unwrap_mock_patch_func(f.__wrapped__)
+    return (real_func, patchings + f.patchings)
 
 def get_class_name_suffix(params_dict):
     if "name" in params_dict:
