@@ -625,8 +625,8 @@ can be confusing. The ``@mock.patch(...)`` decorator must come *below* the
 
 Note 1: the same holds true when using ``@parameterized.expand``.
 
-Note 2: using ``@mock.patch`` as a class decorator is supported for all test
-runners *except* ``pytest>=4``
+Note 2: ``@mock.patch`` is supported with all runners, including ``pytest``,
+*except* when used as a *class decorator* with ``pytest>=4``.
 
 Parameterized testing with Django
 .................................
