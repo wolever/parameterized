@@ -388,7 +388,7 @@ class is a subclass of ``unittest.TestCase``):
     class AddTestCase(unittest.TestCase):
         @parameterized.expand([
             ("2 and 3", 2, 3, 5),
-            ("3 and 5", 2, 3, 5),
+            ("3 and 5", 3, 5, 8),
         ])
         def test_add(self, _, a, b, expected):
             assert_equal(a + b, expected)
