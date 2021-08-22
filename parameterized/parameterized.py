@@ -102,14 +102,14 @@ def reapply_patches_if_need(func):
 # generated methods instead. Sadly, this can cause problems with old versions of the `mock` package, as shown in
 # https://bugs.python.org/issue40126 (bpo-40126).
 #
-# Long story short, the problem arises whenever the `patchings` list in the source method is left fully empty.
+# Long story short, bpo-40126 arises whenever the `patchings` list in of `mock`-decorated method is left fully empty.
 #
 # The bug has been fixed in the `mock` code itself since:
 #   - Python 3.7.8-rc1, 3.8.3-rc1 and later (for the `unittest.mock` package) [0][1].
 #   - Version 4 of the `mock` backport package (https://pypi.org/project/mock/) [2].
 #
-# To workaround the issue when running old `mock` versions, we avoid fully stripping out patches from the source
-# method, replacing them with a "dummy" no-op patch instead.
+# To work around the problem when running old `mock` versions, we avoid fully stripping out patches from the source
+# method in favor of replacing them with a "dummy" no-op patch instead.
 #
 # [0] https://docs.python.org/release/3.7.10/whatsnew/changelog.html#python-3-7-8-release-candidate-1
 # [1] https://docs.python.org/release/3.8.10/whatsnew/changelog.html#python-3-8-3-release-candidate-1
