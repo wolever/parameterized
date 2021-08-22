@@ -2,6 +2,7 @@
 
 import inspect
 import mock
+from functools import wraps
 from unittest import TestCase
 from nose.tools import assert_equal, assert_raises
 
@@ -10,9 +11,30 @@ from .parameterized import (
     short_repr, detect_runner, parameterized_class, SkipTest,
 )
 
+
 def assert_contains(haystack, needle):
     if needle not in haystack:
         raise AssertionError("%r not in %r" %(needle, haystack))
+
+
+def assert_raises_regexp_decorator(expected_exception, expected_regexp):
+    """
+    Assert that a wrapped `unittest.TestCase` method raises an error matching the given type and message regex.
+
+    :param expected_exception: Exception class expected to be raised.
+    :param expected_regexp: Regexp (re pattern object or string) expected to be found in error message.
+    """
+
+    def func_decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            with self.assertRaisesRegexp(expected_exception, expected_regexp):
+                func(self, *args, **kwargs)
+
+        return wrapper
+
+    return func_decorator
+
 
 runner = detect_runner()
 UNITTEST = runner.startswith("unittest")
@@ -30,6 +52,7 @@ SKIP_FLAGS = {
 
 missing_tests = set()
 
+
 def expect(skip, tests=None):
     if tests is None:
         tests = skip
@@ -37,6 +60,28 @@ def expect(skip, tests=None):
     if any(SKIP_FLAGS.get(f) for f in (skip or "").split()):
         return
     missing_tests.update(tests)
+
+
+def expect_exception_matching_regex(tests, expected_exception, expected_regexp):
+    """
+    Assert that the given `unittest.TestCase` tests raise an error matching the given type and message regex.
+
+    :param tests: A single test name or list of test names.
+    :param expected_exception: Exception class expected to be raised.
+    :param expected_regexp: Regexp (re pattern object or string) expected to be found in error message.
+    """
+    if not isinstance(tests, list):
+        tests = [tests]
+
+    decorator = assert_raises_regexp_decorator(expected_exception, expected_regexp)
+    frame_locals = inspect.currentframe().f_back.f_locals
+
+    for test in tests:
+        if test in frame_locals:
+            test_method = frame_locals[test]
+            decorated_test_method = decorator(test_method)
+            frame_locals[test] = decorated_test_method
+
 
 test_params = [
     (42, ),
@@ -180,6 +225,31 @@ class TestParameterizedExpandWithNoMockPatchForClass(TestCase):
                              "(%r, %r, %r, %r)" %
                              (foo, bar, mock_umask._mock_name,
                               mock_fdopen._mock_name))
+
+    expect([
+        "test_patch_decorator_over_test_with_error('foo_this', 'umask')",
+        "test_patch_decorator_over_test_with_error('foo_that', 'umask')",
+    ])
+
+    @parameterized.expand([
+        ("foo_this",),
+        ("foo_that",),
+    ])
+    @mock.patch("os.umask")
+    def test_patch_decorator_over_test_with_error(self, foo, mock_umask):
+        missing_tests.remove(
+            "test_patch_decorator_over_test_with_error({!r}, {!r})".format(foo, mock_umask._mock_name)
+        )
+        raise ValueError("This error should have been caught")
+
+    expect_exception_matching_regex(
+        tests=[
+            "test_patch_decorator_over_test_with_error_0_foo_this",
+            "test_patch_decorator_over_test_with_error_1_foo_that",
+        ],
+        expected_exception=ValueError,
+        expected_regexp="^This error should have been caught$",
+    )
 
 
 class TestParameterizedExpandWithNoMockPatchForClassNoExpand(object):

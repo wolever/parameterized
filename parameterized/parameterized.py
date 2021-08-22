@@ -7,6 +7,14 @@ from types import MethodType as MethodType
 from collections import namedtuple
 
 try:
+    from unittest import mock
+except ImportError:
+    try:
+        import mock
+    except ImportError:
+        mock = None
+
+try:
     from collections import OrderedDict as MaybeOrderedDict
 except ImportError:
     MaybeOrderedDict = dict
@@ -61,11 +69,11 @@ def getargspec(func):
     args = inspect.getfullargspec(func)
     if args.kwonlyargs:
         raise TypeError((
-            "parameterized does not (yet) support functions with keyword "
-            "only arguments, but %r has keyword only arguments. "
-            "Please open an issue with your usecase if this affects you: "
-            "https://github.com/wolever/parameterized/issues/new"
-        ) %(func, ))
+                            "parameterized does not (yet) support functions with keyword "
+                            "only arguments, but %r has keyword only arguments. "
+                            "Please open an issue with your usecase if this affects you: "
+                            "https://github.com/wolever/parameterized/issues/new"
+                        ) % (func,))
     return CompatArgSpec(*args[:4])
 
 
@@ -90,9 +98,54 @@ def reapply_patches_if_need(func):
     return func
 
 
+# `parameterized.expand` strips out `mock` patches from the source method in favor of re-applying them over the
+# generated methods instead. Sadly, this can cause problems with old versions of the `mock` package, as shown in
+# https://bugs.python.org/issue40126 (bpo-40126).
+#
+# Long story short, the problem arises whenever the `patchings` list in the source method is left fully empty.
+#
+# The bug has been fixed in the `mock` code itself since:
+#   - Python 3.7.8-rc1, 3.8.3-rc1 and later (for the `unittest.mock` package) [0][1].
+#   - Version 4 of the `mock` backport package (https://pypi.org/project/mock/) [2].
+#
+# To workaround the issue when running old `mock` versions, we avoid fully stripping out patches from the source
+# method, replacing them with a "dummy" no-op patch instead.
+#
+# [0] https://docs.python.org/release/3.7.10/whatsnew/changelog.html#python-3-7-8-release-candidate-1
+# [1] https://docs.python.org/release/3.8.10/whatsnew/changelog.html#python-3-8-3-release-candidate-1
+# [2] https://mock.readthedocs.io/en/stable/changelog.html#b1
+
+PYTHON_DOESNT_HAVE_FIX_FOR_BPO_40126 = (
+        sys.version_info[:3] < (3, 7, 8) or (sys.version_info[:2] >= (3, 8) and sys.version_info[:3] < (3, 8, 3))
+)
+
+try:
+    import mock as _mock_backport
+except ImportError:
+    _mock_backport = None
+
+MOCK_BACKPORT_DOESNT_HAVE_FIX_FOR_BPO_40126 = _mock_backport is not None and _mock_backport.version_info[0] < 4
+
+AVOID_CLEARING_MOCK_PATCHES = PYTHON_DOESNT_HAVE_FIX_FOR_BPO_40126 or MOCK_BACKPORT_DOESNT_HAVE_FIX_FOR_BPO_40126
+
+
+class DummyPatchTarget(object):
+    dummy_attribute = None
+
+    @staticmethod
+    def create_dummy_patch():
+        if mock is not None:
+            return mock.patch.object(DummyPatchTarget(), "dummy_attribute", new=None)
+        else:
+            raise ImportError("Missing mock package")
+
+
 def delete_patches_if_need(func):
     if hasattr(func, 'patchings'):
-        func.patchings[:] = []
+        if AVOID_CLEARING_MOCK_PATCHES:
+            func.patchings[:] = [DummyPatchTarget.create_dummy_patch()]
+        else:
+            func.patchings[:] = []
 
 
 _param = namedtuple("param", "args kwargs")
@@ -119,7 +172,7 @@ class param(_param):
                 pass
         """
 
-    def __new__(cls, *args , **kwargs):
+    def __new__(cls, *args, **kwargs):
         return _param.__new__(cls, args, kwargs)
 
     @classmethod
@@ -149,7 +202,7 @@ class param(_param):
         if isinstance(args, param):
             return args
         elif isinstance(args, string_types):
-            args = (args, )
+            args = (args,)
         try:
             return cls(*args)
         except TypeError as e:
@@ -157,11 +210,11 @@ class param(_param):
                 raise
             raise TypeError(
                 "Parameters must be tuples, but %r is not (hint: use '(%r, )')"
-                %(args, args),
+                % (args, args),
             )
 
     def __repr__(self):
-        return "param(*%r, **%r)" %self
+        return "param(*%r, **%r)" % self
 
 
 class QuietOrderedDict(MaybeOrderedDict):
@@ -215,7 +268,7 @@ def parameterized_argument_value_pairs(func, p):
         in zip(named_args, argspec.defaults or [])
     ])
 
-    seen_arg_names = set([ n for (n, _) in result ])
+    seen_arg_names = set([n for (n, _) in result])
     keywords = QuietOrderedDict(sorted([
         (name, p.kwargs[name])
         for name in p.kwargs
@@ -223,10 +276,10 @@ def parameterized_argument_value_pairs(func, p):
     ]))
 
     if varargs:
-        result.append(("*%s" %(argspec.varargs, ), tuple(varargs)))
+        result.append(("*%s" % (argspec.varargs,), tuple(varargs)))
 
     if keywords:
-        result.append(("**%s" %(argspec.keywords, ), keywords))
+        result.append(("**%s" % (argspec.keywords,), keywords))
 
     return result
 
@@ -242,7 +295,7 @@ def short_repr(x, n=64):
 
     x_repr = to_text(repr(x))
     if len(x_repr) > n:
-        x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
+        x_repr = x_repr[:n // 2] + "..." + x_repr[len(x_repr) - n // 2:]
     return x_repr
 
 
@@ -253,7 +306,7 @@ def default_doc_func(func, num, p):
     all_args_with_values = parameterized_argument_value_pairs(func, p)
 
     # Assumes that the function passed is a bound method.
-    descs = ["%s=%s" %(n, short_repr(v)) for n, v in all_args_with_values]
+    descs = ["%s=%s" % (n, short_repr(v)) for n, v in all_args_with_values]
 
     # The documentation might be a multiline string, so split it
     # and just work with the first string, ignoring the period
@@ -263,7 +316,7 @@ def default_doc_func(func, num, p):
     if first.endswith("."):
         suffix = "."
         first = first[:-1]
-    args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
+    args = "%s[with %s]" % (len(first) and " " or "", ", ".join(descs))
     return "".join(
         to_text(x)
         for x in [first.rstrip(), args, suffix, nl, rest]
@@ -272,7 +325,7 @@ def default_doc_func(func, num, p):
 
 def default_name_func(func, num, p):
     base_name = func.__name__
-    name_suffix = "_%s" %(num, )
+    name_suffix = "_%s" % (num,)
 
     if len(p.args) > 0 and isinstance(p.args[0], string_types):
         name_suffix += "_" + parameterized.to_safe_name(p.args[0])
@@ -292,7 +345,7 @@ def set_test_runner(name):
     if name not in _test_runners:
         raise TypeError(
             "Invalid test runner: %r (must be one of: %s)"
-            %(name, ", ".join(_test_runners)),
+            % (name, ", ".join(_test_runners)),
         )
     _test_runner_override = name
 
@@ -358,12 +411,12 @@ class parameterized(object):
             if test_self is not None:
                 if issubclass(test_cls, InstanceType):
                     raise TypeError((
-                        "@parameterized can't be used with old-style classes, but "
-                        "%r has an old-style class. Consider using a new-style "
-                        "class, or '@parameterized.expand' "
-                        "(see http://stackoverflow.com/q/54867/71522 for more "
-                        "information on old-style classes)."
-                    ) %(test_self, ))
+                                        "@parameterized can't be used with old-style classes, but "
+                                        "%r has an old-style class. Consider using a new-style "
+                                        "class, or '@parameterized.expand' "
+                                        "(see http://stackoverflow.com/q/54867/71522 for more "
+                                        "information on old-style classes)."
+                                    ) % (test_self,))
 
             original_doc = wrapper.__doc__
             for num, args in enumerate(wrapper.parameterized_input):
@@ -396,7 +449,7 @@ class parameterized(object):
 
         wrapper.parameterized_input = input
         wrapper.parameterized_func = test_func
-        test_func.__name__ = "_parameterized_original_%s" %(test_func.__name__, )
+        test_func.__name__ = "_parameterized_original_%s" % (test_func.__name__,)
 
         return wrapper
 
@@ -417,7 +470,7 @@ class parameterized(object):
                 test_self
             )
             nose_func = make_method(nose_func, func_self, type(test_self))
-        return unbound_func, (nose_func, ) + p.args + (p.kwargs or {}, )
+        return unbound_func, (nose_func,) + p.args + (p.kwargs or {},)
 
     def assert_not_in_testcase_subclass(self):
         parent_classes = self._terrible_magic_get_defining_classes()
@@ -459,7 +512,7 @@ class parameterized(object):
         #    https://github.com/wolever/nose-parameterized/pull/31)
         if not isinstance(input_values, list):
             input_values = list(input_values)
-        return [ param.from_decorator(p) for p in input_values ]
+        return [param.from_decorator(p) for p in input_values]
 
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
@@ -585,7 +638,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
     )
 
     class_name_func = class_name_func or default_class_name_func
-    
+
     if classname_func:
         warnings.warn(
             "classname_func= is deprecated; use class_name_func= instead. "
@@ -603,7 +656,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
 
             name = class_name_func(base_class, idx, input_dict)
 
-            test_class_module[name] = type(name, (base_class, ), test_class_dict)
+            test_class_module[name] = type(name, (base_class,), test_class_dict)
 
         # We need to leave the base class in place (see issue #73), but if we
         # leave the test_ methods in place, the test runner will try to pick
@@ -635,7 +688,7 @@ def get_class_name_suffix(params_dict):
 
 def default_class_name_func(cls, num, params_dict):
     suffix = get_class_name_suffix(params_dict)
-    return "%s_%s%s" %(
+    return "%s_%s%s" % (
         cls.__name__,
         num,
         suffix and "_" + suffix,
