@@ -102,7 +102,7 @@ def reapply_patches_if_need(func):
 # generated methods instead. Sadly, this can cause problems with old versions of the `mock` package, as shown in
 # https://bugs.python.org/issue40126 (bpo-40126).
 #
-# Long story short, bpo-40126 arises whenever the `patchings` list in of `mock`-decorated method is left fully empty.
+# Long story short, bpo-40126 arises whenever the `patchings` list of a `mock`-decorated method is left fully empty.
 #
 # The bug has been fixed in the `mock` code itself since:
 #   - Python 3.7.8-rc1, 3.8.3-rc1 and later (for the `unittest.mock` package) [0][1].
