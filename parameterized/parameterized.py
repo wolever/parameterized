@@ -549,6 +549,26 @@ class parameterized(object):
     @classmethod
     def to_safe_name(cls, s):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
+    
+    @classmethod
+    def subtest(cls, params):
+        """
+        @parameterized.subTests(...)
+        def test_foo(self):
+            ...
+        ->
+        def test_foo(self):
+            for param in ...:
+                with self.subTest(param):
+                    ...
+        """
+        def decorator(func):
+            def wrapper(self, *args, **kwargs):
+                for p in cls.input_as_callable(params)():
+                    with self.subTest(p):
+                        func(*((self,) + p.args), **p.kwargs)
+            return wrapper
+        return decorator
 
 
 def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None):
