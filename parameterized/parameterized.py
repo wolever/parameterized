@@ -614,6 +614,9 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
         for method_name in list(base_class.__dict__):
             if method_name.startswith("test"):
                 delattr(base_class, method_name)
+
+        setattr(base_class, "is_parametrized", True)
+
         return base_class
 
     return decorator
