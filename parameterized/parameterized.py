@@ -21,6 +21,7 @@ except ImportError:
 
 PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
+PY35_OR_NEWER = PY3 and sys.version_info.minor >= 5
 
 
 if PY3:
@@ -82,11 +83,17 @@ def reapply_patches_if_need(func):
         return dummy_func
 
     if hasattr(func, 'patchings'):
+        is_original_async = False
+        if PY35_OR_NEWER:
+            is_original_async = inspect.iscoroutinefunction(func)
         func = dummy_wrapper(func)
         tmp_patchings = func.patchings
         delattr(func, 'patchings')
         for patch_obj in tmp_patchings:
-            func = patch_obj.decorate_callable(func)
+            if is_original_async:
+                func = patch_obj.decorate_async_callable(func)
+            else:
+                func = patch_obj.decorate_callable(func)
     return func
 
 
