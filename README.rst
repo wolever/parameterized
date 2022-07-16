@@ -654,7 +654,7 @@ What happened to ``nose-parameterized``?
     only made sense to change the name!
 
 What do you mean when you say "nose is best supported"?
-    There are small caveates with ``py.test`` and ``unittest``: ``py.test``
+    There are small caveats with ``py.test`` and ``unittest``: ``py.test``
     does not show the parameter values (ex, it will show ``test_add[0]``
     instead of ``test_add[1, 2, 3]``), and ``unittest``/``unittest2`` do not
     support test generators so ``@parameterized.expand`` must be used.
