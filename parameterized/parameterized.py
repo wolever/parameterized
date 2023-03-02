@@ -307,7 +307,7 @@ def set_test_runner(name):
 def detect_runner():
     """ Guess which test runner we're using by traversing the stack and looking
         for the first matching module. This *should* be reasonably safe, as
-        it's done during test disocvery where the test runner should be the
+        it's done during test discovery where the test runner should be the
         stack frame immediately outside. """
     if _test_runner_override is not None:
         return _test_runner_override
@@ -328,6 +328,7 @@ def detect_runner():
         else:
             _test_runner_guess = None
     return _test_runner_guess
+
 
 
 class parameterized(object):
@@ -470,11 +471,28 @@ class parameterized(object):
 
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
-               **legacy):
+               namespace=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
             subclasses of 'UnitTest', where Nose test generators don't work.
+
+            :param input: An iterable of values to pass to the test function.
+            :param name_func: A function that takes a single argument (the
+                value from the input iterable) and returns a string to use as
+                the name of the test case. If not provided, the name of the
+                test case will be the name of the test function with the
+                parameter value appended.
+            :param doc_func: A function that takes a single argument (the
+                value from the input iterable) and returns a string to use as
+                the docstring of the test case. If not provided, the docstring
+                of the test case will be the docstring of the test function.
+            :param skip_on_empty: If True, the test will be skipped if the
+                input iterable is empty. If False, a ValueError will be raised
+                if the input iterable is empty.
+            :param namespace: The namespace (dict-like) to inject the test cases
+                into. If not provided, the namespace of the test function will
+                be used.
 
             >>> @parameterized.expand([("foo", 1, 2)])
             ... def test_add1(name, input, expected):
@@ -502,7 +520,9 @@ class parameterized(object):
         name_func = name_func or default_name_func
 
         def parameterized_expand_wrapper(f, instance=None):
-            frame_locals = inspect.currentframe().f_back.f_locals
+            frame_locals = namespace
+            if frame_locals is None:
+                frame_locals = inspect.currentframe().f_back.f_locals
 
             parameters = cls.input_as_callable(input)()
 
@@ -592,7 +612,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
     )
 
     class_name_func = class_name_func or default_class_name_func
-    
+
     if classname_func:
         warnings.warn(
             "classname_func= is deprecated; use class_name_func= instead. "
