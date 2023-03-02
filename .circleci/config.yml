@@ -34,6 +34,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e pypy3-nose2
   
@@ -49,6 +58,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e pypy3-pytest3
@@ -66,6 +84,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e pypy3-unit
   
@@ -81,6 +108,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e pypy3-unit2
@@ -98,6 +134,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py37-nose
   
@@ -113,6 +158,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py37-nose2
@@ -130,6 +184,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py37-pytest3
   
@@ -145,6 +208,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py37-unit
@@ -162,6 +234,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py37-unit2
   
@@ -177,6 +258,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py38-nose
@@ -194,6 +284,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py38-nose2
   
@@ -209,6 +308,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py38-pytest3
@@ -226,6 +334,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py38-unit
   
@@ -241,6 +358,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py38-unit2
@@ -258,6 +384,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py39-nose
   
@@ -273,6 +408,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py39-nose2
@@ -290,6 +434,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py39-pytest3
   
@@ -305,6 +458,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py39-unit
@@ -322,6 +484,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py39-unit2
   
@@ -337,6 +508,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py310-unit
@@ -354,6 +534,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py310-nose2
   
@@ -370,6 +559,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e py311-unit
   
@@ -385,6 +583,15 @@ jobs:
       - run:
           name: install tox
           command: pip install tox
+      - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
       - run:
           name: run tests
           command: tox -e py311-nose2

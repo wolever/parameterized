@@ -21,12 +21,12 @@ include-package-data = false
 [tool.setuptools.packages]
 find = {namespaces = false}
 
-[tool.setuptools.dynamic]
-version = {attr = "parameterized.__version__"}
+[tool.setuptools_scm]
+write_to = "parameterized/version.py"
 
 [tool.distutils.bdist_wheel]
 universal = 1
 
 [build-system]
-requires = ["setuptools>=61.2"]
+requires = ["setuptools>=61.2", "setuptools_scm[toml]>=7.0"]
 build-backend = "setuptools.build_meta"
