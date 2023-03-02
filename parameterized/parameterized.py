@@ -19,6 +19,9 @@ except ImportError:
     class SkipTest(Exception):
         pass
 
+# NOTE: even though Python 2 support has been dropped, these checks have been
+# left in place to avoid merge conflicts. They can be removed in the future, and
+# future code can be written to assume Python 3.
 PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
 PY35_OR_NEWER = PY3 and sys.version_info.minor >= 5
