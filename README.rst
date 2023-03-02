@@ -186,8 +186,6 @@ __ https://travis-ci.org/wolever/parameterized
    :stub-columns: 1
 
    * -
-     - Py2.6
-     - Py2.7
      - Py3.4
      - Py3.5
      - Py3.6
@@ -205,8 +203,6 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
-     - yes
-     - yes
    * - nose2
      - yes
      - yes
@@ -216,11 +212,7 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
-     - yes
-     - yes
    * - py.test 2
-     - yes
-     - yes
      - no*
      - no*
      - no*
@@ -238,8 +230,6 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
-     - yes
-     - yes
    * - py.test 4
      - no**
      - no**
@@ -249,11 +239,7 @@ __ https://travis-ci.org/wolever/parameterized
      - no**
      - no**
      - no**
-     - no**
-     - no**
    * - py.test fixtures
-     - no†
-     - no†
      - no†
      - no†
      - no†
@@ -272,12 +258,8 @@ __ https://travis-ci.org/wolever/parameterized
      - yes
      - yes
      - yes
-     - yes
-     - yes
    * - | unittest2
        | (``@parameterized.expand``)
-     - yes
-     - yes
      - yes
      - yes
      - yes
@@ -649,9 +631,11 @@ To migrate a codebase from ``nose-parameterized`` to ``parameterized``:
 FAQ
 ---
 
-What happened to ``nose-parameterized``?
-    Originally only nose was supported. But now everything is supported, and it
-    only made sense to change the name!
+What happened to Python 2.X support?
+    As of version 0.9.0, ``parameterized`` no longer supports Python 2.X.
+    Previous versions of ``parameterized`` - 0.8.1 being the latest - will
+    continue to work on Python 2.X, but will not receive any new features or bug
+    fixes.
 
 What do you mean when you say "nose is best supported"?
     There are small caveates with ``py.test`` and ``unittest``: ``py.test``
@@ -668,3 +652,7 @@ Why do I get an ``AttributeError: 'function' object has no attribute 'expand'`` 
     You've likely installed the ``parametrized`` (note the missing *e*)
     package. Use ``parameterized`` (with the *e*) instead and you'll be all
     set.
+
+What happened to ``nose-parameterized``?
+    Originally only nose was supported. But now everything is supported, and it
+    only made sense to change the name!
