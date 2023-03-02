@@ -565,10 +565,17 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 8:
 
     class TestAsyncParameterizedExpandWithNoMockPatchForClass(IsolatedAsyncioTestCase):
         expect([
+            "test_one_async_function('foo1')",
+            "test_one_async_function('foo0')",
+            "test_one_async_function(42)",
             "test_one_async_function_patch_decorator('foo1', 'umask')",
             "test_one_async_function_patch_decorator('foo0', 'umask')",
             "test_one_async_function_patch_decorator(42, 'umask')",
         ])
+
+        @parameterized.expand([(42,), "foo0", param("foo1")])
+        async def test_one_async_function(self, foo):
+            missing_tests.remove("test_one_async_function(%r)" % (foo, ))
 
         @parameterized.expand([(42,), "foo0", param("foo1")])
         @mock.patch("os.umask")

@@ -24,7 +24,6 @@ except ImportError:
 # future code can be written to assume Python 3.
 PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
-PY35_OR_NEWER = PY3 and sys.version_info.minor >= 5
 
 
 if PY3:
@@ -86,9 +85,7 @@ def reapply_patches_if_need(func):
         return dummy_func
 
     if hasattr(func, 'patchings'):
-        is_original_async = False
-        if PY35_OR_NEWER:
-            is_original_async = inspect.iscoroutinefunction(func)
+        is_original_async = inspect.iscoroutinefunction(func)
         func = dummy_wrapper(func)
         tmp_patchings = func.patchings
         delattr(func, 'patchings')
@@ -554,13 +551,20 @@ class parameterized(object):
             delete_patches_if_need(f)
 
             f.__test__ = False
+
         return parameterized_expand_wrapper
 
     @classmethod
     def param_as_standalone_func(cls, p, func, name):
-        @wraps(func)
-        def standalone_func(*a):
-            return func(*(a + p.args), **p.kwargs)
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def standalone_func(*a):
+                return await func(*(a + p.args), **p.kwargs)
+        else:
+            @wraps(func)
+            def standalone_func(*a):
+                return func(*(a + p.args), **p.kwargs)
+
         standalone_func.__name__ = name
 
         # place_as is used by py.test to determine what source file should be
