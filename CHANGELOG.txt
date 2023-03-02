@@ -10,6 +10,9 @@
       (https://github.com/wolever/parameterized/pull/135; thanks @Ronserruya)
     * Work around for bug bpo-40126 in older versions of ``mock``
       (https://github.com/wolever/parameterized/pull/129; thanks @alexpizarroj)
+    * Allow str, bytes, and any non-iterable input to be passed to
+      ``@parameterized`` without wrapping in a tuple
+      (https://github.com/wolever/parameterized/pull/157)
 
 0.8.1 (2021-01-09)
     * Add README and LICENSE to pypi sdist package

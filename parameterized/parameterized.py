@@ -2,6 +2,7 @@ import re
 import sys
 import inspect
 import warnings
+from typing import Iterable
 from functools import wraps
 from types import MethodType as MethodType
 from collections import namedtuple
@@ -208,7 +209,7 @@ class param(_param):
             """
         if isinstance(args, param):
             return args
-        elif isinstance(args, string_types):
+        elif isinstance(args, (str, bytes)) or not isinstance(args, Iterable):
             args = (args, )
         try:
             return cls(*args)
@@ -635,6 +636,8 @@ class parameterized(object):
 
     @classmethod
     def to_safe_name(cls, s):
+        if not isinstance(s, str):
+            s = str(s)
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
 
 
