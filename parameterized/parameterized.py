@@ -323,6 +323,10 @@ def detect_runner():
     return _test_runner_guess
 
 
+def _get_parent_locals():
+    return inspect.currentframe().f_back.f_back.f_locals
+
+
 class parameterized(object):
     """ Parameterize a test case::
 
@@ -462,7 +466,7 @@ class parameterized(object):
         return [ param.from_decorator(p) for p in input_values ]
 
     @classmethod
-    def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
+    def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False, frame_locals=None,
                **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
@@ -495,7 +499,10 @@ class parameterized(object):
         name_func = name_func or default_name_func
 
         def parameterized_expand_wrapper(f, instance=None):
-            frame_locals = inspect.currentframe().f_back.f_locals
+            if frame_locals is None:
+                _frame_locals = _get_parent_locals()
+            else:
+                _frame_locals = frame_locals
 
             parameters = cls.input_as_callable(input)()
 
@@ -516,8 +523,8 @@ class parameterized(object):
                 # of param_as_standalone_func so as not to share
                 # patch objects between new functions
                 nf = reapply_patches_if_need(f)
-                frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
-                frame_locals[name].__doc__ = doc_func(f, num, p)
+                _frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
+                _frame_locals[name].__doc__ = doc_func(f, num, p)
 
             # Delete original patches to prevent new function from evaluating
             # original patching object as well as re-constructed patches.
