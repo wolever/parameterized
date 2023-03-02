@@ -3,7 +3,13 @@
 import inspect
 import mock
 from unittest import TestCase
-from nose.tools import assert_equal, assert_raises
+try:
+    from nose.tools import assert_equal, assert_raises
+except ImportError:
+    def assert_equal(*args, **kwds):
+        return TestCase().assertEqual(*args, **kwds)
+    def assert_raises(*args, **kwds):
+        return TestCase().assertRaises(*args, **kwds)
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
