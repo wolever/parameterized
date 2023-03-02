@@ -7,6 +7,14 @@ from types import MethodType as MethodType
 from collections import namedtuple
 
 try:
+    from unittest import mock
+except ImportError:
+    try:
+        import mock
+    except ImportError:
+        mock = None
+
+try:
     from collections import OrderedDict as MaybeOrderedDict
 except ImportError:
     MaybeOrderedDict = dict
@@ -97,9 +105,54 @@ def reapply_patches_if_need(func):
     return func
 
 
+# `parameterized.expand` strips out `mock` patches from the source method in favor of re-applying them over the
+# generated methods instead. Sadly, this can cause problems with old versions of the `mock` package, as shown in
+# https://bugs.python.org/issue40126 (bpo-40126).
+#
+# Long story short, bpo-40126 arises whenever the `patchings` list of a `mock`-decorated method is left fully empty.
+#
+# The bug has been fixed in the `mock` code itself since:
+#   - Python 3.7.8-rc1, 3.8.3-rc1 and later (for the `unittest.mock` package) [0][1].
+#   - Version 4 of the `mock` backport package (https://pypi.org/project/mock/) [2].
+#
+# To work around the problem when running old `mock` versions, we avoid fully stripping out patches from the source
+# method in favor of replacing them with a "dummy" no-op patch instead.
+#
+# [0] https://docs.python.org/release/3.7.10/whatsnew/changelog.html#python-3-7-8-release-candidate-1
+# [1] https://docs.python.org/release/3.8.10/whatsnew/changelog.html#python-3-8-3-release-candidate-1
+# [2] https://mock.readthedocs.io/en/stable/changelog.html#b1
+
+PYTHON_DOESNT_HAVE_FIX_FOR_BPO_40126 = (
+    sys.version_info[:3] < (3, 7, 8) or (sys.version_info[:2] >= (3, 8) and sys.version_info[:3] < (3, 8, 3))
+)
+
+try:
+    import mock as _mock_backport
+except ImportError:
+    _mock_backport = None
+
+MOCK_BACKPORT_DOESNT_HAVE_FIX_FOR_BPO_40126 = _mock_backport is not None and _mock_backport.version_info[0] < 4
+
+AVOID_CLEARING_MOCK_PATCHES = PYTHON_DOESNT_HAVE_FIX_FOR_BPO_40126 or MOCK_BACKPORT_DOESNT_HAVE_FIX_FOR_BPO_40126
+
+
+class DummyPatchTarget(object):
+    dummy_attribute = None
+
+    @staticmethod
+    def create_dummy_patch():
+        if mock is not None:
+            return mock.patch.object(DummyPatchTarget(), "dummy_attribute", new=None)
+        else:
+            raise ImportError("Missing mock package")
+
+
 def delete_patches_if_need(func):
     if hasattr(func, 'patchings'):
-        func.patchings[:] = []
+        if AVOID_CLEARING_MOCK_PATCHES:
+            func.patchings[:] = [DummyPatchTarget.create_dummy_patch()]
+        else:
+            func.patchings[:] = []
 
 
 _param = namedtuple("param", "args kwargs")
