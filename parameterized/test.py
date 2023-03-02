@@ -93,15 +93,19 @@ def expect_exception_matching_regex(tests, expected_exception, expected_regexp):
 test_params = [
     (42, ),
     "foo0",
+    b"bar",
+    123,
     param("foo1"),
     param("foo2", bar=42),
 ]
 
 expect("standalone", [
+    "test_naked_function(42, bar=None)",
     "test_naked_function('foo0', bar=None)",
+    "test_naked_function(b'bar', bar=None)",
+    "test_naked_function(123, bar=None)",
     "test_naked_function('foo1', bar=None)",
     "test_naked_function('foo2', bar=42)",
-    "test_naked_function(42, bar=None)",
 ])
 
 @parameterized(test_params)
@@ -111,10 +115,12 @@ def test_naked_function(foo, bar=None):
 
 class TestParameterized(object):
     expect("generator", [
+        "test_instance_method(42, bar=None)",
+        "test_instance_method(b'bar', bar=None)",
+        "test_instance_method(123, bar=None)",
         "test_instance_method('foo0', bar=None)",
         "test_instance_method('foo1', bar=None)",
         "test_instance_method('foo2', bar=42)",
-        "test_instance_method(42, bar=None)",
     ])
 
     @parameterized(test_params)
@@ -149,7 +155,8 @@ if not PYTEST:
 
 def custom_naming_func(custom_tag):
     def custom_naming_func(testcase_func, param_num, param):
-        return testcase_func.__name__ + ('_%s_name_' % custom_tag) + str(param.args[0])
+        arg = param.args[0]
+        return testcase_func.__name__ + ('_%s_name_' % custom_tag) + parameterized.to_safe_name(arg)
 
     return custom_naming_func
 
@@ -317,10 +324,12 @@ def test_mock_patch_multiple_standalone(param, umask, getpid):
 
 class TestParamerizedOnTestCase(TestCase):
     expect([
+        "test_on_TestCase(42, bar=None)",
+        "test_on_TestCase(b'bar', bar=None)",
+        "test_on_TestCase(123, bar=None)",
         "test_on_TestCase('foo0', bar=None)",
         "test_on_TestCase('foo1', bar=None)",
         "test_on_TestCase('foo2', bar=42)",
-        "test_on_TestCase(42, bar=None)",
     ])
 
     @parameterized.expand(test_params)
@@ -329,6 +338,8 @@ class TestParamerizedOnTestCase(TestCase):
 
     expect([
         "test_on_TestCase2_custom_name_42(42, bar=None)",
+        "test_on_TestCase2_custom_name_b_bar_(b'bar', bar=None)",
+        "test_on_TestCase2_custom_name_123(123, bar=None)",
         "test_on_TestCase2_custom_name_foo0('foo0', bar=None)",
         "test_on_TestCase2_custom_name_foo1('foo1', bar=None)",
         "test_on_TestCase2_custom_name_foo2('foo2', bar=42)",
@@ -341,7 +352,7 @@ class TestParamerizedOnTestCase(TestCase):
         frame = stack[1]
         frame_locals = frame[0].f_locals
         nose_test_method_name = frame_locals['a'][0]._testMethodName
-        expected_name = "test_on_TestCase2_custom_name_" + str(foo)
+        expected_name = "test_on_TestCase2_custom_name_" + parameterized.to_safe_name(foo)
         assert_equal(nose_test_method_name, expected_name,
                      "Test Method name '%s' did not get customized to expected: '%s'" %
                      (nose_test_method_name, expected_name))
@@ -420,14 +431,6 @@ def test_warns_when_using_parameterized_with_TestCase():
                 pass
     except Exception as e:
         assert_contains(str(e), "parameterized.expand")
-    else:
-        raise AssertionError("Expected exception not raised")
-
-def test_helpful_error_on_invalid_parameters():
-    try:
-        parameterized([1432141234243])(lambda: None)
-    except Exception as e:
-        assert_contains(str(e), "Parameters must be tuples")
     else:
         raise AssertionError("Expected exception not raised")
 
