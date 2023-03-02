@@ -323,9 +323,6 @@ def detect_runner():
     return _test_runner_guess
 
 
-def _get_parent_locals():
-    return inspect.currentframe().f_back.f_back.f_locals
-
 
 class parameterized(object):
     """ Parameterize a test case::
@@ -466,12 +463,29 @@ class parameterized(object):
         return [ param.from_decorator(p) for p in input_values ]
 
     @classmethod
-    def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False, frame_locals=None,
-               **legacy):
+    def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
+               namespace=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
             subclasses of 'UnitTest', where Nose test generators don't work.
+
+            :param input: An iterable of values to pass to the test function.
+            :param name_func: A function that takes a single argument (the
+                value from the input iterable) and returns a string to use as
+                the name of the test case. If not provided, the name of the
+                test case will be the name of the test function with the
+                parameter value appended.
+            :param doc_func: A function that takes a single argument (the
+                value from the input iterable) and returns a string to use as
+                the docstring of the test case. If not provided, the docstring
+                of the test case will be the docstring of the test function.
+            :param skip_on_empty: If True, the test will be skipped if the
+                input iterable is empty. If False, a ValueError will be raised
+                if the input iterable is empty.
+            :param namespace: The namespace (dict-like) to inject the test cases
+                into. If not provided, the namespace of the test function will
+                be used.
 
             >>> @parameterized.expand([("foo", 1, 2)])
             ... def test_add1(name, input, expected):
@@ -499,10 +513,9 @@ class parameterized(object):
         name_func = name_func or default_name_func
 
         def parameterized_expand_wrapper(f, instance=None):
+            frame_locals = namespace
             if frame_locals is None:
-                _frame_locals = _get_parent_locals()
-            else:
-                _frame_locals = frame_locals
+                frame_locals = inspect.currentframe().f_back.f_locals
 
             parameters = cls.input_as_callable(input)()
 
@@ -523,8 +536,8 @@ class parameterized(object):
                 # of param_as_standalone_func so as not to share
                 # patch objects between new functions
                 nf = reapply_patches_if_need(f)
-                _frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
-                _frame_locals[name].__doc__ = doc_func(f, num, p)
+                frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
+                frame_locals[name].__doc__ = doc_func(f, num, p)
 
             # Delete original patches to prevent new function from evaluating
             # original patching object as well as re-constructed patches.
@@ -592,7 +605,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
     )
 
     class_name_func = class_name_func or default_class_name_func
-    
+
     if classname_func:
         warnings.warn(
             "classname_func= is deprecated; use class_name_func= instead. "
