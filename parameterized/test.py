@@ -1,10 +1,17 @@
 # coding=utf-8
 
 import inspect
+import sys
 import mock
 from functools import wraps
 from unittest import TestCase
-from nose.tools import assert_equal, assert_raises
+try:
+    from nose.tools import assert_equal, assert_raises
+except ImportError:
+    def assert_equal(*args, **kwds):
+        return TestCase().assertEqual(*args, **kwds)
+    def assert_raises(*args, **kwds):
+        return TestCase().assertRaises(*args, **kwds)
 
 from .parameterized import (
     PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
@@ -622,3 +629,26 @@ class TestUnicodeDocstring(object):
     def test_with_docstring(self, param):
         """ Это док-стринг, содержащий не-ascii символы """
         pass
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+    from unittest import IsolatedAsyncioTestCase
+
+    class TestAsyncParameterizedExpandWithNoMockPatchForClass(IsolatedAsyncioTestCase):
+        expect([
+            "test_one_async_function('foo1')",
+            "test_one_async_function('foo0')",
+            "test_one_async_function(42)",
+            "test_one_async_function_patch_decorator('foo1', 'umask')",
+            "test_one_async_function_patch_decorator('foo0', 'umask')",
+            "test_one_async_function_patch_decorator(42, 'umask')",
+        ])
+
+        @parameterized.expand([(42,), "foo0", param("foo1")])
+        async def test_one_async_function(self, foo):
+            missing_tests.remove("test_one_async_function(%r)" % (foo, ))
+
+        @parameterized.expand([(42,), "foo0", param("foo1")])
+        @mock.patch("os.umask")
+        async def test_one_async_function_patch_decorator(self, foo, mock_umask):
+            missing_tests.remove("test_one_async_function_patch_decorator(%r, %r)" %
+                                 (foo, mock_umask._mock_name))

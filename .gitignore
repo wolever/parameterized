@@ -20,7 +20,7 @@ Icon?
 .tox
 build/
 .cache/
-
-\.idea/
 venv/
 .vscode/
+.vscode/
+.idea/

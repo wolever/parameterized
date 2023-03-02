@@ -1,0 +1,32 @@
+[project]
+name = "parameterized"
+authors = [{name = "David Wolever", email = "david@wolever.net"}]
+license = {text = "FreeBSD"}
+description = "Parameterized testing with any Python test framework"
+readme = "README.rst"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+]
+urls = {Homepage = "https://github.com/wolever/parameterized"}
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = ["jinja2"]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.setuptools.dynamic]
+version = {attr = "parameterized.__version__"}
+
+[tool.distutils.bdist_wheel]
+universal = 1
+
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"

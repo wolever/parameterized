@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Rebuilds the .circleci/config.yml file based on the output of ``tox --listenvs``
@@ -21,8 +21,8 @@ jobs:
 
   test-{{ tox_env }}:
     docker:
-      {% if python_ver == "pypy" -%}
-      - image: pypy:2
+      {% if python_ver == "pypy3" -%}
+      - image: pypy:3
       {%- else -%}
       - image: python:{{ python_ver }}
       {%- endif %}
@@ -30,7 +30,7 @@ jobs:
       - checkout
       - run:
           name: install tox
-          command: pip install tox==3.7.0
+          command: pip install tox
       - run:
           name: run tests
           command: tox -e {{ tox_env }}
@@ -48,7 +48,7 @@ workflows:
 # !!! WARNING !!!
 """)
 
-# Maps tox python versions (ex, "py27") to Travis Python versions (ex, "2.7")
+# Maps tox python versions (ex, "py27") to CircleCI Python versions (ex, "2.7")
 py_version_map = {
     "py26": "2.6",
     "py27": "2.7",
@@ -56,14 +56,17 @@ py_version_map = {
     "py36": "3.6",
     "py37": "3.7",
     "py38": "3.8",
-    "py39": "3.9-rc",
-    "pypy": "pypy",
+    "py39": "3.9",
+    "py310": "3.10",
+    "py311": "3.11",
+    "pypy3": "pypy3",
 }
 
 def main():
-    env_list_str = sp.check_output("tox --listenvs", shell=True).splitlines()
+    env_list_bytes = sp.check_output("tox --listenvs", shell=True).splitlines()
     env_list = []
-    for env in env_list_str:
+    for env_bytes in env_list_bytes:
+        env = env_bytes.decode("utf-8")
         if not env.strip():
             continue
         py_ver, _, _ = env.partition("-")
