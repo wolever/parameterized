@@ -8,6 +8,8 @@
       (https://github.com/wolever/parameterized/pull/148; thanks @KOLANICH)
     * Add support for ``IsolatedAsyncioTestCase``
       (https://github.com/wolever/parameterized/pull/135; thanks @Ronserruya)
+    * Work around for bug bpo-40126 in older versions of ``mock``
+      (https://github.com/wolever/parameterized/pull/129; thanks @alexpizarroj)
 
 0.8.1 (2021-01-09)
     * Add README and LICENSE to pypi sdist package
