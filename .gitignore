@@ -20,5 +20,5 @@ Icon?
 .tox
 build/
 .cache/
-
-\.idea/
+.vscode/
+.idea/
