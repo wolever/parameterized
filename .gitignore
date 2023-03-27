@@ -1,3 +1,5 @@
+parameterized/version.py
+
 *.class
 *.o
 *.pyc

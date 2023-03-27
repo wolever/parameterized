@@ -32,6 +32,15 @@ jobs:
           name: install tox
           command: pip install tox
       - run:
+          name: install build deps
+          command: pip install --upgrade setuptools setuptools_scm wheel build
+      - run:
+          name: build package
+          command: python3 -m build -nwx .
+      - run:
+          name: install package
+          command: pip install --upgrade ./dist/*.whl
+      - run:
           name: run tests
           command: tox -e {{ tox_env }}
   {% endfor %}
@@ -63,10 +72,9 @@ py_version_map = {
 }
 
 def main():
-    env_list_bytes = sp.check_output("tox --listenvs", shell=True).splitlines()
+    env_list_raw = sp.check_output("tox --listenvs", shell=True).decode("utf-8").splitlines()
     env_list = []
-    for env_bytes in env_list_bytes:
-        env = env_bytes.decode("utf-8")
+    for env in env_list_raw:
         if not env.strip():
             continue
         py_ver, _, _ = env.partition("-")
