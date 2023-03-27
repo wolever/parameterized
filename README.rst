@@ -334,6 +334,27 @@ into memory before the start of the test run (we do this explicitly to ensure
 that generators are exhausted exactly once in multi-process or multi-threaded
 testing environments).
 
+This also applies to iterators or generators in other decorators. For example,
+the following works for the first run but not the second:
+
+.. code:: python
+
+  @parameterized.expand([('first run',), ('second run',)])
+  @mock.patch.object(MyIterator, 'get_iterator', new=mock.Mock(
+      return_value=iter([1])))
+  def test_foo(self, bar):
+    ...
+
+Workaround:
+
+.. code:: python
+
+  @parameterized.expand([('first run',), ('second run',)])
+  @mock.patch.object(MyIterator, 'get_iterator')
+  def test_foo(self, bar, mock_get_iterator):
+    mock_get_iterator.return_value = iter([1])
+    ...
+
 The ``@parameterized`` decorator can be used test class methods, and standalone
 functions:
 
