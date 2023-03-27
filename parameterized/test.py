@@ -291,21 +291,29 @@ def test_mock_patch_standalone_function(foo, mock_umask):
         )
     )
 
-
+@mock.patch.multiple("os", umask=mock.DEFAULT)
 class TestParameterizedExpandWithMockPatchMultiple(TestCase):
     expect([
-        "test_mock_patch_multiple_expand(42, 'umask', 'getpid')",
+        "test_mock_patch_multiple_expand_on_method(42, 'umask', 'getpid')",
+        "test_mock_patch_multiple_expand_on_class(16, 'umask')",
     ])
 
     @parameterized.expand([(42, )])
-    @mock.patch.multiple("os", umask=mock.DEFAULT, getpid=mock.DEFAULT)
-    def test_mock_patch_multiple_expand(self, param, umask, getpid):
+    @mock.patch.multiple("os", getpid=mock.DEFAULT)
+    def test_mock_patch_multiple_expand_on_method(self, param, umask, getpid):
         missing_tests.remove(
-            "test_mock_patch_multiple_expand(%r, %r, %r)" %(
+            "test_mock_patch_multiple_expand_on_method(%r, %r, %r)" %(
                 param, umask._mock_name, getpid._mock_name
             )
         )
 
+    @parameterized.expand([(16, )])
+    def test_mock_patch_multiple_expand_on_class(self, param, umask):
+        missing_tests.remove(
+            "test_mock_patch_multiple_expand_on_class(%r, %r)" %(
+                param, umask._mock_name,
+            )
+        )
 
 expect("standalone", [
     "test_mock_patch_multiple_standalone(42, 'umask', 'getpid')",

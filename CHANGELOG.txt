@@ -13,6 +13,8 @@
     * Allow str, bytes, and any non-iterable input to be passed to
       ``@parameterized`` without wrapping in a tuple
       (https://github.com/wolever/parameterized/pull/157)
+    * Fix class-level ``mock.patch.multiple``
+      (https://github.com/wolever/parameterized/issues/138; thanks @ArthurGW)
 
 0.8.1 (2021-01-09)
     * Add README and LICENSE to pypi sdist package
