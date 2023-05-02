@@ -35,7 +35,7 @@ def assert_raises_regexp_decorator(expected_exception, expected_regexp):
     def func_decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            with self.assertRaisesRegexp(expected_exception, expected_regexp):
+            with self.assertRaisesRegex(expected_exception, expected_regexp):
                 func(self, *args, **kwargs)
 
         return wrapper
