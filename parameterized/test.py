@@ -2,9 +2,8 @@
 
 import inspect
 import sys
-import mock
 from functools import wraps
-from unittest import TestCase
+from unittest import mock, TestCase
 try:
     from nose.tools import assert_equal, assert_raises
 except ImportError:
