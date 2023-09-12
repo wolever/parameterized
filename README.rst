@@ -644,11 +644,6 @@ Why not use ``@pytest.mark.parametrize``?
     to repeat argument names, and (using ``param``) it supports optional
     keyword arguments.
 
-Why do I get an ``AttributeError: 'function' object has no attribute 'expand'`` with ``@parameterized.expand``?
-    You've likely installed the ``parametrized`` (note the missing *e*)
-    package. Use ``parameterized`` (with the *e*) instead and you'll be all
-    set.
-
 What happened to ``nose-parameterized``?
     Originally only nose was supported. But now everything is supported, and it
     only made sense to change the name!
