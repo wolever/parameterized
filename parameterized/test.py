@@ -385,6 +385,8 @@ class TestParameterizedExpandDocstring(TestCase):
         actual_docstring = test_method.__doc__
         if rstrip:
             actual_docstring = actual_docstring.rstrip()
+        if sys.version_info[:2] >= (3, 13):
+            expected_docstring = inspect.cleandoc(expected_docstring)
         assert_equal(actual_docstring, expected_docstring)
 
     @parameterized.expand([param("foo")],
