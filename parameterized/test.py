@@ -408,10 +408,16 @@ class TestParameterizedExpandDocstring(TestCase):
         """Documentation.
 
         More"""
-        self._assert_docstring(
-            "Documentation [with foo=%r].\n\n"
-            "        More" %(foo, )
-        )
+        if sys.version_info[:2] < (3, 13):
+            self._assert_docstring(
+                "Documentation [with foo=%r].\n\n"
+                "        More" %(foo, )
+            )
+        else:
+            self._assert_docstring(
+                "Documentation [with foo=%r].\n\n"
+                "More" %(foo, )
+            )
 
     @parameterized.expand([param("foo")])
     def test_unicode_docstring(self, foo):
