@@ -641,7 +641,7 @@ class parameterized(object):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
 
 
-def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None):
+def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None, class_callback=None):
     """ Parameterizes a test class by setting attributes on the class.
 
         Can be used in two ways:
@@ -694,6 +694,9 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
             name = class_name_func(base_class, idx, input_dict)
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
+
+            if class_callback:
+                class_callback(test_class_module[name], idx, input_dict)
 
         # We need to leave the base class in place (see issue #73), but if we
         # leave the test_ methods in place, the test runner will try to pick
