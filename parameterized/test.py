@@ -2,9 +2,8 @@
 
 import inspect
 import sys
-import mock
 from functools import wraps
-from unittest import TestCase
+from unittest import TestCase, mock
 try:
     from nose.tools import assert_equal, assert_raises
 except ImportError:
@@ -14,7 +13,7 @@ except ImportError:
         return TestCase().assertRaises(*args, **kwds)
 
 from .parameterized import (
-    PY3, PY2, parameterized, param, parameterized_argument_value_pairs,
+    parameterized, param, parameterized_argument_value_pairs,
     short_repr, detect_runner, parameterized_class, SkipTest,
 )
 
@@ -35,7 +34,7 @@ def assert_raises_regexp_decorator(expected_exception, expected_regexp):
     def func_decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            with self.assertRaisesRegexp(expected_exception, expected_regexp):
+            with self.assertRaisesRegex(expected_exception, expected_regexp):
                 func(self, *args, **kwargs)
 
         return wrapper
@@ -51,9 +50,6 @@ PYTEST = (runner == "pytest")
 SKIP_FLAGS = {
     "generator": UNITTEST,
     "standalone": UNITTEST,
-    # nose2 doesn't run tests on old-style classes under Py2, so don't expect
-    # these tests to run under nose2.
-    "py2nose2": (PY2 and NOSE2),
     "pytest": PYTEST,
 }
 
@@ -329,7 +325,6 @@ def test_mock_patch_multiple_standalone(param, umask, getpid):
     )
 
 
-
 class TestParamerizedOnTestCase(TestCase):
     expect([
         "test_on_TestCase(42, bar=None)",
@@ -374,7 +369,6 @@ class TestParameterizedExpandDocstring(TestCase):
         stack = inspect.stack()
         f_locals = stack[3][0].f_locals
         test_method = (
-            f_locals.get("testMethod") or # Py27
             f_locals.get("function") or # Py33
             f_locals.get("method") or # Py38
             f_locals.get("testfunction") or # Py382
@@ -487,33 +481,6 @@ def test_helpful_error_on_non_iterable_input():
 def tearDownModule():
     missing = sorted(list(missing_tests))
     assert_equal(missing, [])
-
-def test_old_style_classes():
-    if PY3:
-        raise SkipTest("Py3 doesn't have old-style classes")
-    class OldStyleClass:
-        @parameterized(["foo"])
-        def parameterized_method(self, param):
-            pass
-    try:
-        list(OldStyleClass().parameterized_method())
-    except TypeError as e:
-        assert_contains(str(e), "new-style")
-        assert_contains(str(e), "parameterized.expand")
-        assert_contains(str(e), "OldStyleClass")
-    else:
-        raise AssertionError("expected TypeError not raised by old-style class")
-
-
-class TestOldStyleClass:
-    expect("py2nose2 generator", [
-        "test_on_old_style_class('foo')",
-        "test_on_old_style_class('bar')",
-    ])
-
-    @parameterized.expand(["foo", "bar"])
-    def test_old_style_classes(self, param):
-        missing_tests.remove("test_on_old_style_class(%r)" %(param, ))
 
 
 @parameterized([

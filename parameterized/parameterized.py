@@ -2,83 +2,10 @@ import re
 import sys
 import inspect
 import warnings
-from typing import Iterable
+from collections.abc import Iterable
 from functools import wraps
-from types import MethodType as MethodType
 from collections import namedtuple
-
-try:
-    from unittest import mock
-except ImportError:
-    try:
-        import mock
-    except ImportError:
-        mock = None
-
-try:
-    from collections import OrderedDict as MaybeOrderedDict
-except ImportError:
-    MaybeOrderedDict = dict
-
-from unittest import TestCase
-
-try:
-    from unittest import SkipTest
-except ImportError:
-    class SkipTest(Exception):
-        pass
-
-# NOTE: even though Python 2 support has been dropped, these checks have been
-# left in place to avoid merge conflicts. They can be removed in the future, and
-# future code can be written to assume Python 3.
-PY3 = sys.version_info[0] == 3
-PY2 = sys.version_info[0] == 2
-
-
-if PY3:
-    # Python 3 doesn't have an InstanceType, so just use a dummy type.
-    class InstanceType():
-        pass
-    lzip = lambda *a: list(zip(*a))
-    text_type = str
-    string_types = str,
-    bytes_type = bytes
-    def make_method(func, instance, type):
-        if instance is None:
-            return func
-        return MethodType(func, instance)
-else:
-    from types import InstanceType
-    lzip = zip
-    text_type = unicode
-    bytes_type = str
-    string_types = basestring,
-    def make_method(func, instance, type):
-        return MethodType(func, instance, type)
-
-def to_text(x):
-    if isinstance(x, text_type):
-        return x
-    try:
-        return text_type(x, "utf-8")
-    except UnicodeDecodeError:
-        return text_type(x, "latin1")
-
-CompatArgSpec = namedtuple("CompatArgSpec", "args varargs keywords defaults")
-
-
-def getargspec(func):
-    if PY2:
-        return CompatArgSpec(*inspect.getargspec(func))
-    args = inspect.getfullargspec(func)
-    if args.kwonlyargs:
-        raise TypeError((
-            "parameterized does not (yet) support functions with keyword "
-            "only arguments, but %r has keyword only arguments. "
-            "Please open an issue with your usecase if this affects you: "
-            "https://github.com/wolever/parameterized/issues/new"
-        ) %(func, ))
-    return CompatArgSpec(*args[:4])
+from unittest import SkipTest, TestCase, mock
 
 
 def skip_on_empty_helper(*a, **kw):
@@ -142,10 +69,7 @@ class DummyPatchTarget(object):
 
     @staticmethod
     def create_dummy_patch():
-        if mock is not None:
-            return mock.patch.object(DummyPatchTarget(), "dummy_attribute", new=None)
-        else:
-            raise ImportError("Missing mock package")
+        return mock.patch.object(DummyPatchTarget(), "dummy_attribute", new=None)
 
 
 def delete_patches_if_need(func):
@@ -157,6 +81,7 @@ def delete_patches_if_need(func):
 
 
 _param = namedtuple("param", "args kwargs")
+
 
 class param(_param):
     """ Represents a single parameter to a test case.
@@ -180,7 +105,7 @@ class param(_param):
                 pass
         """
 
-    def __new__(cls, *args , **kwargs):
+    def __new__(cls, *args, **kwargs):
         return _param.__new__(cls, args, kwargs)
 
     @classmethod
@@ -225,13 +150,6 @@ class param(_param):
         return "param(*%r, **%r)" %self
 
 
-class QuietOrderedDict(MaybeOrderedDict):
-    """ When OrderedDict is available, use it to make sure that the kwargs in
-        doc strings are consistently ordered. """
-    __str__ = dict.__str__
-    __repr__ = dict.__repr__
-
-
 def parameterized_argument_value_pairs(func, p):
     """Return tuples of parameterized arguments and their values.
 
@@ -261,12 +179,19 @@ def parameterized_argument_value_pairs(func, p):
             >>> parameterized_argument_value_pairs(func, p)
             [("foo", 1), ("*args", (16, ))]
     """
-    argspec = getargspec(func)
+    argspec = inspect.getfullargspec(func)
+    if argspec.kwonlyargs:
+        raise TypeError((
+            "parameterized does not (yet) support functions with keyword "
+            "only arguments, but %r has keyword only arguments. "
+            "Please open an issue with your usecase if this affects you: "
+            "https://github.com/wolever/parameterized/issues/new"
+        ) %(func, ))
     arg_offset = 1 if argspec.args[:1] == ["self"] else 0
 
     named_args = argspec.args[arg_offset:]
 
-    result = lzip(named_args, p.args)
+    result = list(zip(named_args, p.args))
     named_args = argspec.args[len(result) + arg_offset:]
     varargs = p.args[len(result):]
 
@@ -276,8 +201,8 @@ def parameterized_argument_value_pairs(func, p):
         in zip(named_args, argspec.defaults or [])
     ])
 
-    seen_arg_names = set([ n for (n, _) in result ])
-    keywords = QuietOrderedDict(sorted([
+    seen_arg_names = {n for (n, _) in result}
+    keywords = dict(sorted([
         (name, p.kwargs[name])
         for name in p.kwargs
         if name not in seen_arg_names
@@ -287,7 +212,7 @@ def parameterized_argument_value_pairs(func, p):
         result.append(("*%s" %(argspec.varargs, ), tuple(varargs)))
 
     if keywords:
-        result.append(("**%s" %(argspec.keywords, ), keywords))
+        result.append(("**%s" %(argspec.varkw, ), keywords))
 
     return result
 
@@ -301,7 +226,7 @@ def short_repr(x, n=64):
             u"12...89"
     """
 
-    x_repr = to_text(repr(x))
+    x_repr = repr(x)
     if len(x_repr) > n:
         x_repr = x_repr[:n//2] + "..." + x_repr[len(x_repr) - n//2:]
     return x_repr
@@ -325,24 +250,21 @@ def default_doc_func(func, num, p):
         suffix = "."
         first = first[:-1]
     args = "%s[with %s]" %(len(first) and " " or "", ", ".join(descs))
-    return "".join(
-        to_text(x)
-        for x in [first.rstrip(), args, suffix, nl, rest]
-    )
+    return "".join([first.rstrip(), args, suffix, nl, rest])
 
 
 def default_name_func(func, num, p):
     base_name = func.__name__
     name_suffix = "_%s" %(num, )
 
-    if len(p.args) > 0 and isinstance(p.args[0], string_types):
+    if len(p.args) > 0 and isinstance(p.args[0], str):
         name_suffix += "_" + parameterized.to_safe_name(p.args[0])
     return base_name + name_suffix
 
 
 _test_runner_override = None
 _test_runner_guess = False
-_test_runners = set(["unittest", "unittest2", "nose", "nose2", "pytest"])
+_test_runners = {"unittest", "unittest2", "nose", "nose2", "pytest"}
 _test_runner_aliases = {
     "_pytest": "pytest",
 }
@@ -384,7 +306,6 @@ def detect_runner():
     return _test_runner_guess
 
 
-
 class parameterized(object):
     """ Parameterize a test case::
 
@@ -417,20 +338,10 @@ class parameterized(object):
         @wraps(test_func)
         def wrapper(test_self=None):
             test_cls = test_self and type(test_self)
-            if test_self is not None:
-                if issubclass(test_cls, InstanceType):
-                    raise TypeError((
-                        "@parameterized can't be used with old-style classes, but "
-                        "%r has an old-style class. Consider using a new-style "
-                        "class, or '@parameterized.expand' "
-                        "(see http://stackoverflow.com/q/54867/71522 for more "
-                        "information on old-style classes)."
-                    ) %(test_self, ))
-
             original_doc = wrapper.__doc__
             for num, args in enumerate(wrapper.parameterized_input):
                 p = param.from_decorator(args)
-                unbound_func, nose_tuple = self.param_as_nose_tuple(test_self, test_func, num, p)
+                nose_tuple = self.param_as_nose_tuple(test_self, test_func, num, p)
                 try:
                     wrapper.__doc__ = nose_tuple[0].__doc__
                     # Nose uses `getattr(instance, test_func.__name__)` to get
@@ -439,7 +350,7 @@ class parameterized(object):
                     # tests were being enumerated). Set a value here to make
                     # sure nose can get the correct test method.
                     if test_self is not None:
-                        setattr(test_cls, test_func.__name__, unbound_func)
+                        setattr(test_cls, test_func.__name__, nose_tuple[0].__func__)
                     yield nose_tuple
                 finally:
                     if test_self is not None:
@@ -465,21 +376,9 @@ class parameterized(object):
     def param_as_nose_tuple(self, test_self, func, num, p):
         nose_func = wraps(func)(lambda *args: func(*args[:-1], **args[-1]))
         nose_func.__doc__ = self.doc_func(func, num, p)
-        # Track the unbound function because we need to setattr the unbound
-        # function onto the class for nose to work (see comments above), and
-        # Python 3 doesn't let us pull the function out of a bound method.
-        unbound_func = nose_func
         if test_self is not None:
-            # Under nose on Py2 we need to return an unbound method to make
-            # sure that the `self` in the method is properly shared with the
-            # `self` used in `setUp` and `tearDown`. But only there. Everyone
-            # else needs a bound method.
-            func_self = (
-                None if PY2 and detect_runner() == "nose" else
-                test_self
-            )
-            nose_func = make_method(nose_func, func_self, type(test_self))
-        return unbound_func, (nose_func, ) + p.args + (p.kwargs or {}, )
+            nose_func = nose_func.__get__(test_self)
+        return (nose_func, *p.args, p.kwargs or {})
 
     def assert_not_in_testcase_subclass(self):
         parent_classes = self._terrible_magic_get_defining_classes()
@@ -521,7 +420,7 @@ class parameterized(object):
         #    https://github.com/wolever/nose-parameterized/pull/31)
         if not isinstance(input_values, list):
             input_values = list(input_values)
-        return [ param.from_decorator(p) for p in input_values ]
+        return [param.from_decorator(p) for p in input_values]
 
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
@@ -666,7 +565,7 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
 
     """
 
-    if isinstance(attrs, string_types):
+    if isinstance(attrs, str):
         attrs = [attrs]
 
     input_dicts = (
@@ -713,13 +612,9 @@ def get_class_name_suffix(params_dict):
     if "name" in params_dict:
         return parameterized.to_safe_name(params_dict["name"])
 
-    params_vals = (
-        params_dict.values() if PY3 else
-        (v for (_, v) in sorted(params_dict.items()))
-    )
     return parameterized.to_safe_name(next((
-        v for v in params_vals
-        if isinstance(v, string_types)
+        v for v in params_dict.values()
+        if isinstance(v, str)
     ), ""))
 
 
