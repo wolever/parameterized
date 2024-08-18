@@ -687,23 +687,27 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
 
     def decorator(base_class):
         test_class_module = sys.modules[base_class.__module__].__dict__
+        # We need to leave the base class in place (see issue #73), but if we leave
+        # test methods in place, the test runner will try to pick them up and run
+        # them, which doesn't make sense, since no parameters will have been applied.
+        # Address this by copying all test methods into generated classes and setting
+        # them to None in the base class.
+        test_methods = {
+            method_name: getattr(base_class, method_name)
+            for method_name in dir(base_class)
+            if method_name.startswith("test")
+        }
+        for method_name in test_methods:
+            setattr(base_class, method_name, None)
+
+        base_dict = {**base_class.__dict__, **test_methods}
         for idx, input_dict in enumerate(input_dicts):
-            test_class_dict = dict(base_class.__dict__)
-            test_class_dict.update(input_dict)
+            test_class_dict = {**base_dict, **input_dict}
 
             name = class_name_func(base_class, idx, input_dict)
 
             test_class_module[name] = type(name, (base_class, ), test_class_dict)
 
-        # We need to leave the base class in place (see issue #73), but if we
-        # leave the test_ methods in place, the test runner will try to pick
-        # them up and run them... which doesn't make sense, since no parameters
-        # will have been applied.
-        # Address this by iterating over the base class and remove all test
-        # methods.
-        for method_name in list(base_class.__dict__):
-            if method_name.startswith("test"):
-                delattr(base_class, method_name)
         return base_class
 
     return decorator

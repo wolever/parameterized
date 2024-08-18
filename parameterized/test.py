@@ -35,7 +35,7 @@ def assert_raises_regexp_decorator(expected_exception, expected_regexp):
     def func_decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            with self.assertRaisesRegexp(expected_exception, expected_regexp):
+            with self.assertRaisesRegex(expected_exception, expected_regexp):
                 func(self, *args, **kwargs)
 
         return wrapper
@@ -615,12 +615,28 @@ class TestNamedParameterizedClass(TestCase):
         ))
 
 
+class FoobarTestCase(TestCase):
+    def setUp(self):
+        missing_tests.remove("%s:setUp(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
+
+    def tearDown(self):
+        missing_tests.remove("%s:tearDown(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
+
+
 @parameterized_class([
     {"foo": 42},
     {"bar": "some stuff"},
     {"bar": "other stuff", "name": "some name", "foo": 12},
 ])
-class TestParameterizedClassDict(TestCase):
+class TestParameterizedClassDict(FoobarTestCase):
     expect([
         "TestParameterizedClassDict_0:setUp(42, 'empty')",
         "TestParameterizedClassDict_0:test_method(42, 'empty')",
@@ -637,22 +653,12 @@ class TestParameterizedClassDict(TestCase):
     bar = 'empty'
 
     def setUp(self):
-        # Ensure that super() works (issue #73)
+        # Ensure that super() with arguments works (issue #73)
         super(TestParameterizedClassDict, self).setUp()
-        missing_tests.remove("%s:setUp(%r, %r)" %(
-            self.__class__.__name__,
-            self.foo,
-            self.bar,
-        ))
 
     def tearDown(self):
-        # Ensure that super() works (issue #73)
-        super(TestParameterizedClassDict, self).tearDown()
-        missing_tests.remove("%s:tearDown(%r, %r)" %(
-            self.__class__.__name__,
-            self.foo,
-            self.bar,
-        ))
+        # Ensure that super() without arguments works
+        super().tearDown()
 
     def test_method(self):
         missing_tests.remove("%s:test_method(%r, %r)" %(
@@ -660,6 +666,32 @@ class TestParameterizedClassDict(TestCase):
             self.foo,
             self.bar,
         ))
+
+
+class TestMixin:
+    def setUp(self):
+        # Ensure that super() with arguments works
+        super(TestMixin, self).setUp()
+
+    def tearDown(self):
+        # Ensure that super() without arguments works
+        super().tearDown()
+
+    def test_method(self):
+        missing_tests.remove("%s:test_method(%r, %r)" %(
+            self.__class__.__name__,
+            self.foo,
+            self.bar,
+        ))
+
+
+@parameterized_class([{"foo": 42, "bar": 21}])
+class TestParameterizedMixin(TestMixin, FoobarTestCase):
+    expect([
+        "TestParameterizedMixin_0:setUp(42, 21)",
+        "TestParameterizedMixin_0:test_method(42, 21)",
+        "TestParameterizedMixin_0:tearDown(42, 21)",
+    ])
 
 
 class TestUnicodeDocstring(object):
