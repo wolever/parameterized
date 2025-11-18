@@ -1,7 +1,7 @@
 [project]
 name = "parameterized"
 authors = [{name = "David Wolever", email = "david@wolever.net"}]
-license = {text = "FreeBSD"}
+license = "bsd-2-clause-freebsd"
 description = "Parameterized testing with any Python test framework"
 readme = "README.rst"
 requires-python = ">=3.7"
