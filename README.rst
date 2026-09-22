@@ -396,14 +396,18 @@ and ``params``, and it should return the name of the test case.
 index of the test case parameters in the list of parameters, and ``param``
 (an instance of ``param``) will be the parameters which will be used.
 
+The returned names must be unique to avoid overwriting test cases. Include
+``param_num`` to distinguish cases with identical parameter values.
+
 .. code:: python
 
     import unittest
     from parameterized import parameterized
 
     def custom_name_func(testcase_func, param_num, param):
-        return "%s_%s" %(
+        return "%s_%s_%s" %(
             testcase_func.__name__,
+            param_num,
             parameterized.to_safe_name("_".join(str(x) for x in param.args)),
         )
 
@@ -418,8 +422,8 @@ index of the test case parameters in the list of parameters, and ``param``
 Will create the test cases::
 
     $ nosetests example.py
-    test_add_1_2_3 (example.AddTestCase) ... ok
-    test_add_2_3_5 (example.AddTestCase) ... ok
+    test_add_0_2_3_5 (example.AddTestCase) ... ok
+    test_add_1_2_3_5 (example.AddTestCase) ... ok
 
     ----------------------------------------------------------------------
     Ran 2 tests in 0.001s
