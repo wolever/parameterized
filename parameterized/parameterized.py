@@ -260,8 +260,17 @@ def parameterized_argument_value_pairs(func, p):
             >>> p = param(1, 16)
             >>> parameterized_argument_value_pairs(func, p)
             [("foo", 1), ("*args", (16, ))]
+
+        Keyword-only arguments follow ``*args``, in declaration order, with
+        their value or default; a required one that was not given is
+        omitted::
+
+            >>> def func(foo, *, bar, baz=42): pass
+            >>> p = param(1, bar=7)
+            >>> parameterized_argument_value_pairs(func, p)
+            [("foo", 1), ("bar", 7), ("baz", 42)]
     """
-    argspec = getargspec(func)
+    argspec = inspect.getfullargspec(func)
     arg_offset = 1 if argspec.args[:1] == ["self"] else 0
 
     named_args = argspec.args[arg_offset:]
@@ -276,7 +285,15 @@ def parameterized_argument_value_pairs(func, p):
         in zip(named_args, argspec.defaults or [])
     ])
 
+    kwonly_defaults = argspec.kwonlydefaults or {}
+    kwonly = [
+        (name, p.kwargs.get(name, kwonly_defaults.get(name)))
+        for name in argspec.kwonlyargs
+        if name in p.kwargs or name in kwonly_defaults
+    ]
+
     seen_arg_names = set([ n for (n, _) in result ])
+    seen_arg_names.update(argspec.kwonlyargs)
     keywords = QuietOrderedDict(sorted([
         (name, p.kwargs[name])
         for name in p.kwargs
@@ -286,8 +303,10 @@ def parameterized_argument_value_pairs(func, p):
     if varargs:
         result.append(("*%s" %(argspec.varargs, ), tuple(varargs)))
 
+    result.extend(kwonly)
+
     if keywords:
-        result.append(("**%s" %(argspec.keywords, ), keywords))
+        result.append(("**%s" %(argspec.varkw, ), keywords))
 
     return result
 

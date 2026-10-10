@@ -423,6 +423,11 @@ class TestParameterizedExpandDocstring(TestCase):
         """Documentation"""
         self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar))
 
+    @parameterized.expand([param(foo="foo")])
+    def test_keyword_only_arguments(self, *, foo, bar=12):
+        """Documentation"""
+        self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar))
+
     @parameterized.expand([param("foo", )])
     def test_with_leading_newline(self, foo, bar=12):
         """
@@ -532,6 +537,13 @@ class TestOldStyleClass:
     ("x, y=9, *a, **kw", param(1, y=2), [("x", 1), ("y", 2)]),
     ("x, y=9, *a, **kw", param(1, z=2), [("x", 1), ("y", 9), ("**kw", {"z": 2})]),
     ("x, y=9, *a, **kw", param(1, 2, 3, z=3), [("x", 1), ("y", 2), ("*a", (3, )), ("**kw", {"z": 3})]),
+    ("*, x", param(x=1), [("x", 1)]),
+    ("*, x", param(), []),
+    ("*, x=9", param(), [("x", 9)]),
+    ("*, x=9", param(x=1), [("x", 1)]),
+    ("*, y, x=9", param(y=1), [("y", 1), ("x", 9)]),
+    ("a, *, x, **kw", param(1, x=2, z=3), [("a", 1), ("x", 2), ("**kw", {"z": 3})]),
+    ("a, *b, x=9, **kw", param(1, 2, z=3), [("a", 1), ("*b", (2, )), ("x", 9), ("**kw", {"z": 3})]),
 ])
 def test_parameterized_argument_value_pairs(func_params, p, expected):
     helper = eval("lambda %s: None" %(func_params, ))
