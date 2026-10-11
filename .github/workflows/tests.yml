@@ -1,0 +1,88 @@
+name: Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.15', 'pypy3.10', 'pypy3.11']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        if: contains(fromJSON('["3.7", "3.8", "3.9", "3.10"]'), matrix.python)
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-python@v7
+        if: ${{ !contains(fromJSON('["3.7", "3.8", "3.9", "3.10"]'), matrix.python) }}
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install newest compatible tooling and test frameworks
+        run: python -m pip install --upgrade pip setuptools wheel tox build
+      - name: Run tox matrix for this interpreter
+        shell: bash
+        run: |
+          version=${{ matrix.python }}
+          if [[ "$version" == pypy* ]]; then
+            env=pypy3
+          else
+            env=py${version/./}
+          fi
+          python -m tox -e "${env}-unit,${env}-nose2,${env}-pytest"
+      - run: python -m build
+      - name: Test installed wheel outside the checkout
+        shell: bash
+        run: |
+          python -m pip install --force-reinstall dist/*.whl
+          cd "$RUNNER_TEMP"
+          python -m unittest parameterized.test
+  legacy:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.7', '3.8', '3.9']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip tox
+      - name: Run preserved legacy frameworks
+        run: |
+          version=${{ matrix.python }}
+          version=${version/./}
+          python -m tox -e "py${version}-nose,py${version}-pytest3,py${version}-unit2"
+  portability:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.15'
+      - run: python -m pip install --upgrade pip pytest nose2
+      - run: python -m pip install .
+      - run: python -m unittest parameterized.test
+      - run: python -m pytest parameterized/test.py
+      - run: python -m nose2
+  typing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.15'
+      - run: python -m pip install --upgrade pip mypy
+      - run: python -m pip install .
+      - run: python -m mypy --strict typing_examples.py

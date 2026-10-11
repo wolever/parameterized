@@ -1,0 +1,4 @@
+include CHANGELOG.txt
+include tox.ini
+include LICENSE.txt
+include typing_examples.py

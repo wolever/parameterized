@@ -24,3 +24,5 @@ venv/
 .vscode/
 .vscode/
 .idea/
+
+.venv/

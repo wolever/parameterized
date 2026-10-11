@@ -13,19 +13,19 @@ urls = {Homepage = "https://github.com/wolever/parameterized"}
 dynamic = ["version"]
 
 [project.optional-dependencies]
-dev = ["jinja2"]
+dev = ["jinja2", "pytest", "nose2", "tox", "build", "mypy"]
 
 [tool.setuptools]
 include-package-data = false
+
+[tool.setuptools.package-data]
+parameterized = ["*.pyi", "py.typed"]
 
 [tool.setuptools.packages]
 find = {namespaces = false}
 
 [tool.setuptools.dynamic]
 version = {attr = "parameterized.__version__"}
-
-[tool.distutils.bdist_wheel]
-universal = 1
 
 [build-system]
 requires = ["setuptools>=61.2"]

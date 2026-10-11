@@ -71,13 +71,6 @@ def getargspec(func):
     if PY2:
         return CompatArgSpec(*inspect.getargspec(func))
     args = inspect.getfullargspec(func)
-    if args.kwonlyargs:
-        raise TypeError((
-            "parameterized does not (yet) support functions with keyword "
-            "only arguments, but %r has keyword only arguments. "
-            "Please open an issue with your usecase if this affects you: "
-            "https://github.com/wolever/parameterized/issues/new"
-        ) %(func, ))
     return CompatArgSpec(*args[:4])
 
 
@@ -270,11 +263,21 @@ def parameterized_argument_value_pairs(func, p):
     named_args = argspec.args[len(result) + arg_offset:]
     varargs = p.args[len(result):]
 
+    defaults = dict(zip(argspec.args[-len(argspec.defaults or ()):], argspec.defaults or ()))
     result.extend([
-        (name, p.kwargs.get(name, default))
-        for (name, default)
-        in zip(named_args, argspec.defaults or [])
+        (name, p.kwargs[name] if name in p.kwargs else defaults[name])
+        for name in named_args
+        if name in p.kwargs or name in defaults
     ])
+
+    if PY3:
+        full_argspec = inspect.getfullargspec(func)
+        keyword_defaults = full_argspec.kwonlydefaults or {}
+        result.extend([
+            (name, p.kwargs[name] if name in p.kwargs else keyword_defaults[name])
+            for name in full_argspec.kwonlyargs
+            if name in p.kwargs or name in keyword_defaults
+        ])
 
     seen_arg_names = set([ n for (n, _) in result ])
     keywords = QuietOrderedDict(sorted([
@@ -525,7 +528,7 @@ class parameterized(object):
 
     @classmethod
     def expand(cls, input, name_func=None, doc_func=None, skip_on_empty=False,
-               namespace=None, **legacy):
+               namespace=None, decorators=None, **legacy):
         """ A "brute force" method of parameterizing test cases. Creates new
             test cases and injects them into the namespace that the wrapped
             function is being defined in. Useful for parameterizing tests in
@@ -544,6 +547,8 @@ class parameterized(object):
             :param skip_on_empty: If True, the test will be skipped if the
                 input iterable is empty. If False, a ValueError will be raised
                 if the input iterable is empty.
+            :param decorators: Optional iterable of decorators applied to each
+                generated test, in normal Python decorator order.
             :param namespace: The namespace (dict-like) to inject the test cases
                 into. If not provided, the namespace of the test function will
                 be used.
@@ -572,6 +577,7 @@ class parameterized(object):
 
         doc_func = doc_func or default_doc_func
         name_func = name_func or default_name_func
+        decorators = tuple(decorators or ())
 
         def parameterized_expand_wrapper(f, instance=None):
             frame_locals = namespace
@@ -599,6 +605,9 @@ class parameterized(object):
                 nf = reapply_patches_if_need(f)
                 frame_locals[name] = cls.param_as_standalone_func(p, nf, name)
                 frame_locals[name].__doc__ = doc_func(f, num, p)
+                # Match Python decorator order: first listed is outermost.
+                for decorate in reversed(decorators):
+                    frame_locals[name] = decorate(frame_locals[name])
 
             # Delete original patches to prevent new function from evaluating
             # original patching object as well as re-constructed patches.
@@ -641,7 +650,7 @@ class parameterized(object):
         return str(re.sub("[^a-zA-Z0-9_]+", "_", s))
 
 
-def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None):
+def parameterized_class(attrs, input_values=None, class_name_func=None, classname_func=None, test_method_prefix="test"):
     """ Parameterizes a test class by setting attributes on the class.
 
         Can be used in two ways:
@@ -664,6 +673,8 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
             class TestUserAccessLevel(TestCase):
                 ...
 
+        test_method_prefix selects the methods hidden on the template class;
+        it defaults to "test" for compatibility with unittest discovery.
     """
 
     if isinstance(attrs, string_types):
@@ -689,6 +700,10 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
         test_class_module = sys.modules[base_class.__module__].__dict__
         for idx, input_dict in enumerate(input_dicts):
             test_class_dict = dict(base_class.__dict__)
+            # Capture inherited tests before hiding them on the template class.
+            for method_name in dir(base_class):
+                if method_name.startswith(test_method_prefix):
+                    test_class_dict.setdefault(method_name, inspect.getattr_static(base_class, method_name))
             test_class_dict.update(input_dict)
 
             name = class_name_func(base_class, idx, input_dict)
@@ -701,9 +716,13 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
         # will have been applied.
         # Address this by iterating over the base class and remove all test
         # methods.
-        for method_name in list(base_class.__dict__):
-            if method_name.startswith("test"):
-                delattr(base_class, method_name)
+        for method_name in dir(base_class):
+            if method_name.startswith(test_method_prefix):
+                if method_name in base_class.__dict__:
+                    delattr(base_class, method_name)
+                # Deletion would expose a test inherited from a mixin again.
+                if hasattr(base_class, method_name):
+                    setattr(base_class, method_name, None)
         return base_class
 
     return decorator

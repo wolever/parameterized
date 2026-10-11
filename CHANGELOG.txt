@@ -1,3 +1,19 @@
+Unreleased
+----------
+* Support keyword-only arguments in generated documentation (issue #190),
+  and correctly align defaults when required arguments are passed by keyword.
+* Apply optional decorators to every expanded test (issue #166).
+* Ship PEP 561 public API stubs and static usage checks (issue #143).
+* Preserve inherited test methods and descriptors in parameterized classes;
+  hide inherited tests on the unparameterized template (issue #173).
+* Add optional test_method_prefix to parameterized_class (issue #183).
+* Include changelog and tox configuration in
+  source distributions (issues #165 and #168).
+* Test Python 3.7 through 3.15 and PyPy in GitHub Actions; retain separate
+  legacy nose, pytest 3 and unittest2 lanes.
+* Update tests for modern unittest, Python docstring normalization and
+  pytest's removal of generator tests (issue #167).
+
 0.9.0 (2023-03-26)
     * Drop support for Python 2.X, 3.5, and 3.6;
       Add support for Python 3.10, 3.11

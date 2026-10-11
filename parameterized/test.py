@@ -2,7 +2,7 @@
 
 import inspect
 import sys
-import mock
+from unittest import mock
 from functools import wraps
 from unittest import TestCase
 try:
@@ -35,7 +35,7 @@ def assert_raises_regexp_decorator(expected_exception, expected_regexp):
     def func_decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            with self.assertRaisesRegexp(expected_exception, expected_regexp):
+            with self.assertRaisesRegex(expected_exception, expected_regexp):
                 func(self, *args, **kwargs)
 
         return wrapper
@@ -47,6 +47,10 @@ runner = detect_runner()
 UNITTEST = runner.startswith("unittest")
 NOSE2 = (runner == "nose2")
 PYTEST = (runner == "pytest")
+MODERN_PYTEST = PYTEST and int(__import__("pytest").__version__.split(".")[0]) >= 4
+# Exercise all parameter cases on modern pytest without a collection hook;
+# legacy runners still test the original generator decorator.
+parameterize_cases = parameterized.expand if MODERN_PYTEST else parameterized
 
 SKIP_FLAGS = {
     "generator": UNITTEST,
@@ -99,7 +103,7 @@ test_params = [
     param("foo2", bar=42),
 ]
 
-expect("standalone", [
+expect("standalone generator", [
     "test_naked_function(42, bar=None)",
     "test_naked_function('foo0', bar=None)",
     "test_naked_function(b'bar', bar=None)",
@@ -108,7 +112,7 @@ expect("standalone", [
     "test_naked_function('foo2', bar=42)",
 ])
 
-@parameterized(test_params)
+@parameterize_cases(test_params)
 def test_naked_function(foo, bar=None):
     missing_tests.remove("test_naked_function(%r, bar=%r)" %(foo, bar))
 
@@ -123,7 +127,7 @@ class TestParameterized(object):
         "test_instance_method('foo2', bar=42)",
     ])
 
-    @parameterized(test_params)
+    @parameterize_cases(test_params)
     def test_instance_method(self, foo, bar=None):
         missing_tests.remove("test_instance_method(%r, bar=%r)" %(foo, bar))
 
@@ -147,7 +151,7 @@ if not PYTEST:
         def tearDown(self):
             missing_tests.remove("teardown_called(%s)" %(self.stack.pop(0), ))
 
-        @parameterized([(1, ), (2, )])
+        @parameterize_cases([(1, ), (2, )])
         def test_setup(self, count, *a):
             assert_equal(self.actual_order, "setup %s" %(count, ))
             missing_tests.remove("test_setup(%s)" %(self.actual_order, ))
@@ -202,7 +206,7 @@ class TestParameterizedExpandWithNoExpand(object):
         "test_patch_class_no_expand(42, 51, 'umask', 'getpid')",
     ])
 
-    @parameterized([(42, 51)])
+    @parameterize_cases([(42, 51)])
     @mock.patch("os.umask")
     def test_patch_class_no_expand(self, foo, bar, mock_umask, mock_getpid):
         missing_tests.remove("test_patch_class_no_expand"
@@ -271,18 +275,18 @@ class TestParameterizedExpandWithNoMockPatchForClassNoExpand(object):
         "test_patch_no_expand(42, 51, 'umask')",
     ])
 
-    @parameterized([(42, 51)])
+    @parameterize_cases([(42, 51)])
     @mock.patch("os.umask")
     def test_patch_no_expand(self, foo, bar, mock_umask):
         missing_tests.remove("test_patch_no_expand(%r, %r, %r)" %
                              (foo, bar, mock_umask._mock_name))
 
 
-expect("standalone", [
+expect("standalone generator", [
     "test_mock_patch_standalone_function(42, 'umask')",
 ])
 
-@parameterized([(42, )])
+@parameterize_cases([(42, )])
 @mock.patch("os.umask")
 def test_mock_patch_standalone_function(foo, mock_umask):
     missing_tests.remove(
@@ -315,11 +319,11 @@ class TestParameterizedExpandWithMockPatchMultiple(TestCase):
             )
         )
 
-expect("standalone", [
+expect("standalone generator", [
     "test_mock_patch_multiple_standalone(42, 'umask', 'getpid')",
 ])
 
-@parameterized([(42, )])
+@parameterize_cases([(42, )])
 @mock.patch.multiple("os", umask=mock.DEFAULT, getpid=mock.DEFAULT)
 def test_mock_patch_multiple_standalone(param, umask, getpid):
     missing_tests.remove(
@@ -409,8 +413,8 @@ class TestParameterizedExpandDocstring(TestCase):
 
         More"""
         self._assert_docstring(
-            "Documentation [with foo=%r].\n\n"
-            "        More" %(foo, )
+            ("Documentation [with foo=%r].\n\n" +
+            ("More" if sys.version_info >= (3, 13) else "        More")) %(foo, )
         )
 
     @parameterized.expand([param("foo")])
@@ -429,6 +433,29 @@ class TestParameterizedExpandDocstring(TestCase):
         Documentation
         """
         self._assert_docstring("Documentation [with foo=%r, bar=%r]" %(foo, bar), rstrip=True)
+
+
+    def test_required_defaulted_keyword_only_and_extra_kwargs(self):
+        def example(self, value, default=3, *, required, optional=4, **extra):
+            """Example."""
+            return value, default, required, optional, extra
+        values = param(1, required=2, extra=5)
+        self.assertEqual(parameterized_argument_value_pairs(example, values),
+                         [("value", 1), ("default", 3), ("required", 2),
+                          ("optional", 4), ("**extra", {"extra": 5})])
+        namespace = {}
+        parameterized.expand([values], namespace=namespace)(example)
+        generated = namespace["example_0"]
+        self.assertEqual(generated(self), (1, 3, 2, 4, {"extra": 5}))
+        self.assertIn("required=2", generated.__doc__)
+        self.assertIn("optional=4", generated.__doc__)
+        self.assertNotIn("**None", generated.__doc__)
+
+    @parameterized.expand([param(required=2, optional=5)])
+    def test_documented_keyword_only_test(self, *, required, optional=4):
+        """Keyword-only test."""
+        self.assertEqual((required, optional), (2, 5))
+        self._assert_docstring("Keyword-only test [with required=2, optional=5].")
 
 
 def test_warns_when_using_parameterized_with_TestCase():
@@ -468,10 +495,10 @@ def test_helpful_error_on_empty_iterable_input_expand():
         raise AssertionError("Expected exception not raised")
 
 
-expect("stadalone generator", [
+expect("standalone generator", [
     "test_wrapped_iterable_input('foo')",
 ])
-@parameterized(lambda: iter(["foo"]))
+@parameterize_cases(lambda: iter(["foo"]))
 def test_wrapped_iterable_input(foo):
     missing_tests.remove("test_wrapped_iterable_input(%r)" %(foo, ))
 
@@ -492,7 +519,7 @@ def test_old_style_classes():
     if PY3:
         raise SkipTest("Py3 doesn't have old-style classes")
     class OldStyleClass:
-        @parameterized(["foo"])
+        @parameterize_cases(["foo"])
         def parameterized_method(self, param):
             pass
     try:
@@ -506,7 +533,7 @@ def test_old_style_classes():
 
 
 class TestOldStyleClass:
-    expect("py2nose2 generator", [
+    expect("py2nose2 standalone", [
         "test_on_old_style_class('foo')",
         "test_on_old_style_class('bar')",
     ])
@@ -516,11 +543,12 @@ class TestOldStyleClass:
         missing_tests.remove("test_on_old_style_class(%r)" %(param, ))
 
 
-@parameterized([
+@parameterize_cases([
     ("", param(), []),
     ("*a, **kw", param(), []),
     ("*a, **kw", param(1, foo=42), [("*a", (1, )), ("**kw", {"foo": 42})]),
     ("foo", param(1), [("foo", 1)]),
+    ("required, optional=3", param(required=1), [("required", 1), ("optional", 3)]),
     ("foo, *a", param(1), [("foo", 1)]),
     ("foo, *a", param(1, 9), [("foo", 1), ("*a", (9, ))]),
     ("foo, *a, **kw", param(1, bar=9), [("foo", 1), ("**kw", {"bar": 9})]),
@@ -539,7 +567,7 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
     assert_equal(actual, expected)
 
 
-@parameterized([
+@parameterize_cases([
     ("abcd", "'abcd'"),
     ("123456789", "'12...89'"),
     (123456789, "123...789"),
@@ -548,7 +576,7 @@ def test_parameterized_argument_value_pairs(func_params, p, expected):
 def test_short_repr(input, expected, n=6):
     assert_equal(short_repr(input, n=n), expected)
 
-@parameterized([
+@parameterize_cases([
     ("foo", ),
 ])
 def test_with_docstring(input):
@@ -558,7 +586,7 @@ def test_with_docstring(input):
 
 cases_over_10 = [(i, i+1) for i in range(11)]
 
-@parameterized(cases_over_10)
+@parameterize_cases(cases_over_10)
 def test_cases_over_10(input, expected):
     assert_equal(input, expected-1)
 
@@ -693,3 +721,118 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         async def test_one_async_function_patch_decorator(self, foo, mock_umask):
             missing_tests.remove("test_one_async_function_patch_decorator(%r, %r)" %
                                  (foo, mock_umask._mock_name))
+
+
+class TestClassInheritanceRegression(TestCase):
+    def test_inherited_methods_only_run_on_parameterized_classes(self):
+        class Mixin(object):
+            def test_value(self):
+                self.assertEqual(self.value, 42)
+
+        class Template(Mixin, TestCase):
+            def test_super(self):
+                super(Template, self).test_value()
+
+        names = []
+        def class_name(cls, index, attrs):
+            name = "InheritanceRegression_%s" % index
+            names.append(name)
+            return name
+
+        try:
+            parameterized_class([{"value": 42}], class_name_func=class_name)(Template)
+            from unittest import TestLoader, TestResult
+            loader = TestLoader()
+            self.assertEqual(loader.getTestCaseNames(Template), [])
+            result = TestResult()
+            for case in loader.loadTestsFromTestCase(globals()[names[0]]):
+                case.run(result)
+            self.assertEqual(result.testsRun, 2)
+            self.assertEqual(result.errors, [])
+            self.assertEqual(result.failures, [])
+            self.assertTrue(callable(Mixin.test_value))
+        finally:
+            for name in names:
+                globals().pop(name, None)
+
+    def test_custom_test_method_prefix(self):
+        class Template(TestCase):
+            def check_value(self):
+                self.assertEqual(self.value, 42)
+
+        name = "CustomPrefixRegression"
+        try:
+            parameterized_class([{"value": 42}],
+                class_name_func=lambda *args: name,
+                test_method_prefix="check")(Template)
+            self.assertFalse(hasattr(Template, "check_value"))
+            globals()[name]("check_value").check_value()
+        finally:
+            globals().pop(name, None)
+
+    def test_inherited_descriptors_bind_to_generated_class(self):
+        class Mixin(object):
+            @classmethod
+            def test_class_value(cls):
+                assert cls.value == 42
+
+            @staticmethod
+            def test_static_value():
+                return 42
+
+        class Template(Mixin, TestCase):
+            pass
+
+        name = "DescriptorRegression"
+        try:
+            parameterized_class([{"value": 42}],
+                class_name_func=lambda *args: name)(Template)
+            generated = globals()[name]
+            generated.test_class_value()
+            self.assertEqual(generated.test_static_value(), 42)
+            self.assertEqual(Template.test_class_value, None)
+            self.assertTrue(isinstance(generated.__dict__["test_class_value"], classmethod))
+        finally:
+            globals().pop(name, None)
+
+
+class TestExpandedDecorators(TestCase):
+    def test_decorators_apply_to_each_case_in_python_order(self):
+        namespace = {}
+        def decorate(label):
+            def decorator(func):
+                @wraps(func)
+                def wrapper(*args, **kwargs):
+                    return label + func(*args, **kwargs)
+                return wrapper
+            return decorator
+        @parameterized.expand(["one", "two"], namespace=namespace,
+                              decorators=(d for d in [decorate("outer:"), decorate("inner:")]))
+        def sample(value):
+            return value
+        self.assertEqual(namespace["sample_0_one"](), "outer:inner:one")
+        self.assertEqual(namespace["sample_1_two"](), "outer:inner:two")
+
+    def test_marks_and_mock_patches_preserved(self):
+        namespace = {}
+        def mark(func):
+            func.custom_flag = True
+            return func
+        @parameterized.expand(["one", "two"], namespace=namespace, decorators=[mark])
+        @mock.patch("os.getpid", return_value=42)
+        def sample(value, getpid):
+            return value, getpid()
+        for name, expected in [("sample_0_one", "one"), ("sample_1_two", "two")]:
+            self.assertTrue(namespace[name].custom_flag)
+            self.assertEqual(namespace[name](), (expected, 42))
+
+    def test_skip_decorator_skips_generated_cases(self):
+        from unittest import skip
+        namespace = {}
+        @parameterized.expand([1, 2], namespace=namespace, decorators=[skip("reason")])
+        def sample(value):
+            self.fail("should be skipped")
+        for test in namespace.values():
+            self.assertTrue(test.__unittest_skip__)
+            with self.assertRaises(SkipTest):
+                test()
