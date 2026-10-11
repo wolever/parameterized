@@ -693,3 +693,27 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 8:
         async def test_one_async_function_patch_decorator(self, foo, mock_umask):
             missing_tests.remove("test_one_async_function_patch_decorator(%r, %r)" %
                                  (foo, mock_umask._mock_name))
+
+
+class TestParameterizedClassWithSlots(TestCase):
+    def test_parameterized_class_inherits_slots(self):
+        class SlottedCase(object):
+            __slots__ = ('slot',)
+
+            def __init__(self):
+                self.slot = 7
+
+            def test_value(self):
+                return self.value, self.slot
+
+        module = sys.modules[SlottedCase.__module__]
+        try:
+            parameterized_class([{'value': 1}, {'value': 2}])(SlottedCase)
+            for index, value in enumerate((1, 2)):
+                generated = getattr(module, 'SlottedCase_%d' %index)
+                instance = generated()
+                assert_equal(instance.test_value(), (value, 7))
+                assert not hasattr(instance, '__dict__')
+        finally:
+            for index in range(2):
+                module.__dict__.pop('SlottedCase_%d' %index, None)

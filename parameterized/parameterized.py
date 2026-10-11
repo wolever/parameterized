@@ -689,6 +689,9 @@ def parameterized_class(attrs, input_values=None, class_name_func=None, classnam
         test_class_module = sys.modules[base_class.__module__].__dict__
         for idx, input_dict in enumerate(input_dicts):
             test_class_dict = dict(base_class.__dict__)
+            # The generated subclass inherits the base class's slot storage.
+            if "__slots__" in test_class_dict:
+                test_class_dict["__slots__"] = ()
             test_class_dict.update(input_dict)
 
             name = class_name_func(base_class, idx, input_dict)
